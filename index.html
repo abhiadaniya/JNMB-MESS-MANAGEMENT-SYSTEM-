@@ -639,6 +639,18 @@
             </div>
           </div>
 
+          <!-- Card 9: Bank Statement Records Stored -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div class="space-y-1">
+              <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Statement Records Stored</div>
+              <div id="statStatementTxnCount" class="text-2xl font-black text-teal-700">0</div>
+              <div id="statStatementUploadCount" class="text-[11px] text-teal-600 font-medium">0 statements uploaded</div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center text-base font-bold">
+              <i class="fa-solid fa-database"></i>
+            </div>
+          </div>
+
         </div>
 
         <!-- Filter Bar & Payments Overview -->
@@ -813,6 +825,13 @@
               </div>
             </div>
 
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Mobile Number (WhatsApp) *</label>
+                <input type="tel" id="regManMobile" required maxlength="10" pattern="[0-9]{10}" placeholder="e.g. 9876543210" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 font-mono font-bold" />
+              </div>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label class="block font-semibold text-slate-700 mb-1">Branch *</label>
@@ -871,7 +890,7 @@
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div>
               <h3 class="text-xs sm:text-sm font-bold text-slate-900">Bulk Import via Excel (.xlsx) or CSV</h3>
-              <p class="text-[11px] text-slate-500">Columns: Name, Hall Ticket No, Branch, Semester, Regulation, Academic Year</p>
+              <p class="text-[11px] text-slate-500">Columns: Name, Hall Ticket No, Mobile Number, Branch, Semester, Regulation, Academic Year</p>
             </div>
             <button onclick="downloadStudentImportTemplate()" class="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1">
               <i class="fa-solid fa-download"></i> Template CSV
@@ -920,6 +939,7 @@
                   <tr>
                     <th class="px-3 py-2">HT No</th>
                     <th class="px-3 py-2">Name</th>
+                    <th class="px-3 py-2">Mobile</th>
                     <th class="px-3 py-2">Branch</th>
                     <th class="px-3 py-2">Sem</th>
                     <th class="px-3 py-2">Regulation</th>
@@ -1067,6 +1087,86 @@
           </form>
         </div>
 
+        <!-- Bulk Import Old Payment / UTR Records (CSV / Excel / PDF) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+            <div>
+              <h3 class="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-file-import text-teal-600"></i>
+                <span>Bulk Import Old Payment / UTR Records</span>
+              </h3>
+              <p class="text-[11px] text-slate-500">Upload CSV, Excel, or PDF with Name, Branch, Roll No (Hall Ticket), UTR Number, Amount &amp; Month — same as Student Bulk Import, applied to previous/old payment history</p>
+            </div>
+            <button onclick="downloadBulkUtrTemplate()" class="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 flex-shrink-0">
+              <i class="fa-solid fa-download"></i> Template CSV
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-1">
+              <label class="block font-semibold text-slate-700 mb-1 text-xs">Default Month (used if file has no Month column)</label>
+              <select id="bulkUtrDefaultMonth" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 font-medium text-xs"></select>
+            </div>
+            <div class="sm:col-span-2">
+              <div 
+                onclick="document.getElementById('bulkUtrFileInput').click()" 
+                ondragover="event.preventDefault(); this.classList.add('border-teal-500','bg-teal-50/30')"
+                ondragleave="event.preventDefault(); this.classList.remove('border-teal-500','bg-teal-50/30')"
+                ondrop="handleBulkUtrDrop(event)"
+                class="border-2 border-dashed border-slate-300 hover:border-teal-500 bg-slate-50/60 hover:bg-teal-50/20 rounded-xl p-3 text-center cursor-pointer transition-all h-full flex flex-col items-center justify-center gap-1"
+              >
+                <input 
+                  type="file" 
+                  id="bulkUtrFileInput" 
+                  accept=".xlsx, .xls, .csv, .pdf" 
+                  class="hidden" 
+                  onchange="handleBulkUtrFileSelected(event)" 
+                />
+                <i class="fa-solid fa-cloud-arrow-up text-teal-600"></i>
+                <span class="text-[11px] font-bold text-slate-700">Click or drag CSV / Excel / PDF here</span>
+                <span class="text-[10px] text-slate-400">Old payment registers, fee collection sheets, etc.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview & Validation Area -->
+          <div id="bulkUtrPreviewArea" class="hidden space-y-3 pt-2">
+            <div class="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs font-semibold">
+              <div class="flex flex-wrap items-center gap-3">
+                <span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check"></i> Matched: <span id="bulkUtrMatchedCount">0</span></span>
+                <span class="text-blue-700 font-bold"><i class="fa-solid fa-shield-check"></i> Bank-Verified: <span id="bulkUtrBankMatchCount">0</span></span>
+                <span class="text-amber-700 font-bold"><i class="fa-solid fa-triangle-exclamation"></i> Duplicate UTR: <span id="bulkUtrDupCount">0</span></span>
+                <span class="text-rose-700 font-bold"><i class="fa-solid fa-circle-xmark"></i> Not Found in Database: <span id="bulkUtrNotFoundCount">0</span></span>
+              </div>
+              <button 
+                id="btnConfirmBulkUtrImport" 
+                onclick="confirmBulkUtrImport()" 
+                class="touch-target px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center gap-1.5"
+              >
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Import Matched Records</span>
+              </button>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-200 max-h-72">
+              <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                <thead class="bg-slate-50 font-semibold text-slate-600 sticky top-0">
+                  <tr>
+                    <th class="px-3 py-2">Roll No / HT</th>
+                    <th class="px-3 py-2">Name (File)</th>
+                    <th class="px-3 py-2">Month</th>
+                    <th class="px-3 py-2">UTR Number</th>
+                    <th class="px-3 py-2">Amount (₹)</th>
+                    <th class="px-3 py-2">Date</th>
+                    <th class="px-3 py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="bulkUtrPreviewTbody" class="divide-y divide-slate-100 bg-white"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <!-- Active Session Student Table & Direct UTR Entry Form -->
         <div id="sessionResultContainer" class="hidden bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm space-y-4">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -1199,6 +1299,7 @@
                 <tr>
                   <th class="px-3 py-2.5">Hall Ticket No</th>
                   <th class="px-3 py-2.5">Student Name</th>
+                  <th class="px-3 py-2.5">Mobile Number</th>
                   <th class="px-3 py-2.5">Branch</th>
                   <th class="px-3 py-2.5">Semester</th>
                   <th class="px-3 py-2.5">Regulation</th>
@@ -1266,6 +1367,10 @@
                 <div id="sdName" class="font-bold">—</div>
               </div>
               <div>
+                <div class="text-[10px] text-blue-300 font-semibold">Mobile Number</div>
+                <div id="sdMobile" class="font-bold font-mono">—</div>
+              </div>
+              <div>
                 <div class="text-[10px] text-blue-300 font-semibold">Branch</div>
                 <div id="sdBranch" class="font-bold">—</div>
               </div>
@@ -1282,12 +1387,15 @@
                 <div id="sdAcaYear" class="font-bold">—</div>
               </div>
             </div>
-            <div class="pt-2 border-t border-white/10 flex items-center gap-2">
+            <div class="pt-2 border-t border-white/10 flex flex-wrap items-center gap-2">
               <button onclick="openEditStudentModal(currentStudentDetailsId)" class="touch-target px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg flex items-center gap-1.5">
                 <i class="fa-solid fa-pen-to-square"></i> Edit Student
               </button>
               <button onclick="openAdminUtrModal()" class="touch-target px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg flex items-center gap-1.5">
                 <i class="fa-solid fa-file-invoice-dollar"></i> Enter / Update UTR
+              </button>
+              <button onclick="sendWhatsAppMessage(currentStudentDetailsId)" class="touch-target px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/30 text-[11px] font-bold rounded-lg flex items-center gap-1.5">
+                <i class="fa-brands fa-whatsapp"></i> Send WhatsApp Update
               </button>
             </div>
           </div>
@@ -1594,12 +1702,49 @@
           </div>
         </div>
 
-        <!-- Imported Transactions Table -->
+        <!-- Pending Preview — Not Yet Saved to Database -->
+        <div id="statementPreviewArea" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="text-xs sm:text-sm font-bold text-amber-900 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>Preview — Not Yet Saved to Database</span>
+              </h3>
+              <p class="text-[11px] text-amber-700" id="statementPreviewMeta">0 transactions parsed</p>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <button onclick="discardStatementPreview()" class="touch-target px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 rounded-xl text-xs font-bold">
+                <i class="fa-solid fa-xmark"></i> Discard
+              </button>
+              <button id="btnSubmitStatement" onclick="submitStatementsToDatabase()" class="touch-target px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Submit to Database</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-amber-200 max-h-72 bg-white">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+              <thead class="bg-slate-50 font-semibold text-slate-600 sticky top-0">
+                <tr>
+                  <th class="px-3 py-2.5">Txn Date</th>
+                  <th class="px-3 py-2.5">UTR / Txn</th>
+                  <th class="px-3 py-2.5">Amount (₹)</th>
+                  <th class="px-3 py-2.5">Narration / Payer</th>
+                  <th class="px-3 py-2.5">Status</th>
+                </tr>
+              </thead>
+              <tbody id="statementPreviewTbody" class="divide-y divide-slate-100 bg-white"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Stored Transactions Table (persisted in database, accumulated across uploads) -->
         <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-3 shadow-sm">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
             <div>
-              <h3 class="text-xs sm:text-sm font-bold text-slate-800">Parsed Statement Credits</h3>
-              <p class="text-[11px] text-slate-500" id="statementActiveMeta">No active statement loaded</p>
+              <h3 class="text-xs sm:text-sm font-bold text-slate-800">Stored Statement Transactions (Database)</h3>
+              <p class="text-[11px] text-slate-500" id="statementActiveMeta">No statement transactions stored yet</p>
             </div>
             <button onclick="downloadSampleCSVTemplate()" class="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1">
               <i class="fa-solid fa-download"></i> Sample CSV Template
@@ -1855,6 +2000,12 @@
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Hall Ticket Number * (Unique)</label>
           <input type="text" id="mStudentHT" required maxlength="12" placeholder="e.g. 22A91A0599" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 font-mono uppercase font-bold text-xs" />
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Mobile Number (WhatsApp) *</label>
+          <input type="tel" id="mStudentMobile" required maxlength="10" pattern="[0-9]{10}" placeholder="e.g. 9876543210" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 font-mono font-bold text-xs" />
+          <p class="text-[10px] text-slate-400 mt-1">10-digit number, used to send WhatsApp payment updates.</p>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -2113,19 +2264,10 @@
       onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    const userFirebaseConfig = {
-      apiKey: "AIzaSyDm8w7KJ5ExCu1OUv5b19E8hT_NyIQ8beU",
-      authDomain: "jnmb-cms.firebaseapp.com",
-      projectId: "jnmb-cms",
-      storageBucket: "jnmb-cms.firebasestorage.app",
-      messagingSenderId: "60742956237",
-      appId: "1:60742956237:web:6ff7aaab70a718e1afe584",
-      measurementId: "G-F3QNRB8YG7"
-    };
+    import { firebaseConfig as userFirebaseConfig, appId as userAppId } from "./firebase-config.js";
 
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userFirebaseConfig;
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'jnmb-cms';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : userAppId;
 
     let app = null;
     let auth = null;
@@ -2166,6 +2308,9 @@
     let currentLoadedSessionStudents = [];
     let currentActiveSessionFilter = null;
     let pendingBulkStudents = [];
+    let pendingBulkUtrRecords = [];
+    let pendingStatementTxns = [];
+    let pendingStatementFileMeta = null;
     let studentToDeleteId = null;
 
     const MONTH_NAMES = [
@@ -2223,6 +2368,14 @@
         const prev = sessMonth.value;
         sessMonth.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
         sessMonth.value = months.includes(prev) ? prev : (months.includes(currentMonthStr) ? currentMonthStr : months[0]);
+      }
+
+      // 4b. Bulk UTR import default month
+      const bulkUtrDefaultMonth = document.getElementById('bulkUtrDefaultMonth');
+      if (bulkUtrDefaultMonth) {
+        const prev = bulkUtrDefaultMonth.value;
+        bulkUtrDefaultMonth.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
+        bulkUtrDefaultMonth.value = months.includes(prev) ? prev : (months.includes(currentMonthStr) ? currentMonthStr : months[0]);
       }
 
       // 5. Reports repFilterMonth
@@ -2689,10 +2842,16 @@
       e.preventDefault();
       const name = document.getElementById('regManName').value.trim();
       const ht = document.getElementById('regManHT').value.trim().toUpperCase();
+      const mobile = document.getElementById('regManMobile').value.trim().replace(/\D/g, '');
       const branch = document.getElementById('regManBranch').value;
       const semester = document.getElementById('regManSemester').value;
       const regulation = document.getElementById('regManRegulation').value;
       const acaYear = document.getElementById('regManAcaYear').value;
+
+      if (mobile && mobile.length !== 10) {
+        showToast("Please enter a valid 10-digit mobile number", "error");
+        return;
+      }
 
       const existing = db.students.find(s => s.hall_ticket_no.toUpperCase() === ht);
       if (existing) {
@@ -2704,6 +2863,7 @@
         id: "S_" + Date.now(),
         hall_ticket_no: ht,
         name: name,
+        mobile_number: mobile,
         branch: branch,
         semester: semester,
         regulation: regulation,
@@ -2751,6 +2911,7 @@
       const headers = rawRows[0].map(h => String(h || '').toLowerCase().trim());
       let htCol = headers.findIndex(h => h.includes('ticket') || h.includes('ht') || h.includes('hall') || h.includes('roll'));
       let nameCol = headers.findIndex(h => h.includes('name') || h.includes('student'));
+      let mobileCol = headers.findIndex(h => h.includes('mobile') || h.includes('phone') || h.includes('whatsapp') || h.includes('contact'));
       let branchCol = headers.findIndex(h => h.includes('branch') || h.includes('dept'));
       let semCol = headers.findIndex(h => h.includes('sem'));
       let regCol = headers.findIndex(h => h.includes('reg'));
@@ -2773,6 +2934,7 @@
         candidates.push({
           hall_ticket_no: rawHT,
           name: row[nameCol] ? String(row[nameCol]).trim() : `Student ${rawHT}`,
+          mobile_number: mobileCol !== -1 && row[mobileCol] ? String(row[mobileCol]).replace(/\D/g, '') : '',
           branch: row[branchCol] ? String(row[branchCol]).trim() : "CSE",
           semester: row[semCol] ? String(row[semCol]).trim() : "IV-I",
           regulation: row[regCol] ? String(row[regCol]).trim() : "R22",
@@ -2807,6 +2969,7 @@
         tr.innerHTML = `
           <td class="px-3 py-2 font-mono font-bold ${isDuplicate ? 'text-amber-800' : 'text-blue-700'}">${c.hall_ticket_no}</td>
           <td class="px-3 py-2 font-semibold text-slate-800">${c.name}</td>
+          <td class="px-3 py-2 font-mono text-slate-600">${c.mobile_number || '—'}</td>
           <td class="px-3 py-2 text-slate-600">${c.branch}</td>
           <td class="px-3 py-2 text-slate-600">${c.semester}</td>
           <td class="px-3 py-2 text-slate-600">${c.regulation}</td>
@@ -2894,6 +3057,7 @@
         const existing = db.students.find(s => s.hall_ticket_no.toUpperCase() === cand.hall_ticket_no.toUpperCase());
         if (existing) {
           existing.name = cand.name;
+          if (cand.mobile_number) existing.mobile_number = cand.mobile_number;
           existing.branch = cand.branch;
           existing.semester = cand.semester;
           existing.regulation = cand.regulation;
@@ -2904,6 +3068,7 @@
             id: "S_" + Math.floor(100000 + Math.random() * 900000),
             hall_ticket_no: cand.hall_ticket_no,
             name: cand.name,
+            mobile_number: cand.mobile_number || '',
             branch: cand.branch,
             semester: cand.semester,
             regulation: cand.regulation,
@@ -2924,12 +3089,348 @@
     }
 
     function downloadStudentImportTemplate() {
-      const csv = "Hall Ticket Number,Student Name,Branch,Semester,Regulation,Academic Year\n" +
-                  "22A91A0591,Ramesh Chandra,CSE,IV-I,R22,2026-2027\n";
+      const csv = "Hall Ticket Number,Student Name,Mobile Number,Branch,Semester,Regulation,Academic Year\n" +
+                  "22A91A0591,Ramesh Chandra,9876543210,CSE,IV-I,R22,2026-2027\n";
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = "JNTUH_UCE_MBD_Student_Import_Template.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // ===================================================================
+    // BULK IMPORT OLD PAYMENT / UTR RECORDS (CSV / Excel / PDF)
+    // Same pattern as Student Bulk Import: read file -> match by Hall
+    // Ticket / Roll No against existing students -> preview -> confirm.
+    // ===================================================================
+
+    function handleBulkUtrDrop(e) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('border-teal-500', 'bg-teal-50/30');
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        processBulkUtrFile(e.dataTransfer.files[0]);
+      }
+    }
+
+    function handleBulkUtrFileSelected(e) {
+      if (e.target.files && e.target.files.length > 0) {
+        processBulkUtrFile(e.target.files[0]);
+      }
+    }
+
+    function processBulkUtrFile(file) {
+      const fileName = file.name;
+      const ext = fileName.split('.').pop().toLowerCase();
+      showToast(`Reading ${fileName}...`, "info");
+
+      if (ext === 'xlsx' || ext === 'xls') {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          try {
+            const data = new Uint8Array(ev.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+            parseBulkUtrRows(jsonRows);
+          } catch (err) {
+            showToast("Failed to parse Excel workbook", "error");
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (ext === 'csv' || ext === 'txt') {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          try {
+            const text = ev.target.result;
+            const rows = text.split(/\r\n|\n/).filter(l => l.trim().length > 0).map(row => row.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+            parseBulkUtrRows(rows);
+          } catch (err) {
+            showToast("Failed to parse CSV file", "error");
+          }
+        };
+        reader.readAsText(file);
+      } else if (ext === 'pdf') {
+        handleBulkUtrPdfFile(file);
+      } else {
+        showToast("Unsupported file type. Use CSV, Excel or PDF.", "error");
+      }
+    }
+
+    function parseBulkUtrRows(rawRows) {
+      if (!rawRows || rawRows.length < 2) {
+        showToast("File contains insufficient rows", "error");
+        return;
+      }
+
+      const headers = rawRows[0].map(h => String(h || '').toLowerCase().trim());
+      let htCol = headers.findIndex(h => h.includes('ticket') || h.includes('roll') || h.includes('ht') || h.includes('hall'));
+      let nameCol = headers.findIndex(h => h.includes('name') || h.includes('student'));
+      let branchCol = headers.findIndex(h => h.includes('branch') || h.includes('dept'));
+      let monthCol = headers.findIndex(h => h.includes('month'));
+      let utrCol = headers.findIndex(h => h.includes('utr') || h.includes('txn') || h.includes('reference') || h.includes('transaction'));
+      let amountCol = headers.findIndex(h => h.includes('amount') || h.includes('paid') || h.includes('fee'));
+      let dateCol = headers.findIndex(h => h.includes('date'));
+
+      if (htCol === -1) htCol = 0;
+      if (utrCol === -1) utrCol = headers.length - 1;
+
+      const defaultMonth = document.getElementById('bulkUtrDefaultMonth')?.value || '';
+      const candidates = [];
+
+      for (let i = 1; i < rawRows.length; i++) {
+        const row = rawRows[i];
+        if (!row || !row[htCol]) continue;
+        const rawHT = String(row[htCol]).trim().toUpperCase();
+        if (!rawHT || rawHT === "HT NO" || rawHT === "HALL TICKET" || rawHT === "ROLL NO") continue;
+
+        const rawUtr = utrCol !== -1 && row[utrCol] ? String(row[utrCol]).trim().toUpperCase() : '';
+        if (!rawUtr) continue;
+
+        candidates.push({
+          hall_ticket_no: rawHT,
+          name_from_file: nameCol !== -1 && row[nameCol] ? String(row[nameCol]).trim() : '',
+          branch_from_file: branchCol !== -1 && row[branchCol] ? String(row[branchCol]).trim() : '',
+          month: monthCol !== -1 && row[monthCol] ? String(row[monthCol]).trim() : defaultMonth,
+          utr_number: rawUtr,
+          amount: amountCol !== -1 && row[amountCol] ? (parseFloat(String(row[amountCol]).replace(/[^0-9.]/g, '')) || 0) : 0,
+          payment_date: dateCol !== -1 && row[dateCol] ? String(row[dateCol]).trim() : ''
+        });
+      }
+
+      if (candidates.length === 0) {
+        showToast("No valid rows with a Hall Ticket Number and UTR Number found", "error");
+        return;
+      }
+
+      displayBulkUtrPreview(candidates);
+    }
+
+    function handleBulkUtrPdfFile(file) {
+      const fileReader = new FileReader();
+      fileReader.onload = function() {
+        const typedArray = new Uint8Array(this.result);
+        if (!window.pdfjsLib) {
+          showToast("PDF engine not available", "error");
+          return;
+        }
+        pdfjsLib.getDocument(typedArray).promise.then(function(pdf) {
+          const pagePromises = [];
+          for (let i = 1; i <= pdf.numPages; i++) {
+            pagePromises.push(pdf.getPage(i).then(page => page.getTextContent().then(textContent => {
+              let lines = [];
+              let currentLine = '';
+              textContent.items.forEach(item => {
+                currentLine += item.str + ' ';
+                if (item.hasEOL) {
+                  if (currentLine.trim()) lines.push(currentLine.trim());
+                  currentLine = '';
+                }
+              });
+              if (currentLine.trim()) lines.push(currentLine.trim());
+              return lines;
+            })));
+          }
+          Promise.all(pagePromises).then(pagesLines => {
+            const allLines = pagesLines.flat();
+            const defaultMonth = document.getElementById('bulkUtrDefaultMonth')?.value || '';
+            const candidates = [];
+
+            allLines.forEach(line => {
+              const htMatch = line.match(/\b\d{2}[A-Z][A-Z0-9]{7,9}\b/i);
+              if (!htMatch) return;
+              const rawHT = htMatch[0].toUpperCase();
+
+              const tokens = line.match(/[A-Z0-9]{8,22}/gi) || [];
+              const utrCandidate = tokens
+                .filter(t => t.toUpperCase() !== rawHT)
+                .sort((a, b) => b.length - a.length)[0];
+              if (!utrCandidate) return;
+
+              const amtMatch = line.match(/(?:₹|rs\.?|inr)\s*([\d,]+(?:\.\d+)?)/i);
+              const numTokens = line.match(/\b\d{3,6}\b/g) || [];
+              const amount = amtMatch ? parseFloat(amtMatch[1].replace(/,/g, '')) : (numTokens.length ? parseFloat(numTokens[numTokens.length - 1]) : 0);
+
+              const dateMatch = line.match(/\b(\d{4}-\d{2}-\d{2}|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b/);
+
+              const beforeHT = line.split(htMatch[0])[0].replace(/[^A-Za-z .]/g, ' ').trim();
+              const nameGuess = beforeHT.split(/\s{2,}/).pop().trim();
+
+              candidates.push({
+                hall_ticket_no: rawHT,
+                name_from_file: nameGuess && nameGuess.length > 2 ? nameGuess : '',
+                branch_from_file: '',
+                month: defaultMonth,
+                utr_number: utrCandidate.toUpperCase(),
+                amount: amount || 0,
+                payment_date: dateMatch ? dateMatch[0] : ''
+              });
+            });
+
+            if (candidates.length === 0) {
+              showToast("Could not detect any Hall Ticket + UTR pairs in this PDF", "error");
+              return;
+            }
+
+            displayBulkUtrPreview(candidates);
+            showToast(`Extracted ${candidates.length} possible payment record(s) from PDF — please review before importing`, "info");
+          });
+        }).catch(() => {
+          showToast("Could not extract readable text from PDF", "error");
+        });
+      };
+      fileReader.readAsArrayBuffer(file);
+    }
+
+    function displayBulkUtrPreview(candidates) {
+      pendingBulkUtrRecords = candidates;
+      const tbody = document.getElementById('bulkUtrPreviewTbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      let matchedCount = 0;
+      let bankMatchCount = 0;
+      let dupCount = 0;
+      let notFoundCount = 0;
+
+      const seenUtrsInFile = {};
+      candidates.forEach(c => {
+        seenUtrsInFile[c.utr_number] = (seenUtrsInFile[c.utr_number] || 0) + 1;
+      });
+
+      candidates.forEach(c => {
+        const student = db.students.find(s => s.hall_ticket_no.toUpperCase() === c.hall_ticket_no.toUpperCase());
+        const dbDup = db.mess_bills.some(b => b.utr_number && b.utr_number.toUpperCase() === c.utr_number.toUpperCase());
+        const intraDup = seenUtrsInFile[c.utr_number] > 1;
+        const bankMatch = (db.statement_transactions || []).find(tx => tx.utr_number && tx.utr_number.trim().toUpperCase() === c.utr_number.toUpperCase());
+
+        let statusHtml = '';
+        if (!student) {
+          notFoundCount++;
+          statusHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">Not Found in DB</span>`;
+        } else if (dbDup || intraDup) {
+          dupCount++;
+          statusHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">Duplicate UTR</span>`;
+        } else if (bankMatch) {
+          matchedCount++;
+          bankMatchCount++;
+          statusHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">Matched • Bank-Verified</span>`;
+        } else {
+          matchedCount++;
+          statusHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Matched • Pending Verification</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-mono font-bold ${student ? 'text-blue-700' : 'text-rose-700'}">${c.hall_ticket_no}</td>
+          <td class="px-3 py-2 text-slate-700">${student ? student.name : (c.name_from_file || '—')}</td>
+          <td class="px-3 py-2 text-slate-600">${c.month || '—'}</td>
+          <td class="px-3 py-2 font-mono text-slate-700">${c.utr_number}</td>
+          <td class="px-3 py-2 font-semibold text-slate-800">${c.amount ? '₹' + c.amount : '—'}</td>
+          <td class="px-3 py-2 text-slate-500">${c.payment_date || '—'}</td>
+          <td class="px-3 py-2">${statusHtml}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('bulkUtrMatchedCount').textContent = matchedCount;
+      document.getElementById('bulkUtrBankMatchCount').textContent = bankMatchCount;
+      document.getElementById('bulkUtrDupCount').textContent = dupCount;
+      document.getElementById('bulkUtrNotFoundCount').textContent = notFoundCount;
+      document.getElementById('bulkUtrPreviewArea').classList.remove('hidden');
+    }
+
+    function confirmBulkUtrImport() {
+      if (!pendingBulkUtrRecords.length) return;
+
+      let imported = 0;
+      let autoApproved = 0;
+      let skippedDup = 0;
+      let skippedNotFound = 0;
+      let skippedNoMonth = 0;
+
+      const seenUtrsInFile = {};
+      pendingBulkUtrRecords.forEach(c => {
+        seenUtrsInFile[c.utr_number] = (seenUtrsInFile[c.utr_number] || 0) + 1;
+      });
+
+      pendingBulkUtrRecords.forEach(c => {
+        const student = db.students.find(s => s.hall_ticket_no.toUpperCase() === c.hall_ticket_no.toUpperCase());
+        if (!student) { skippedNotFound++; return; }
+        if (!c.month) { skippedNoMonth++; return; }
+
+        const dbDup = db.mess_bills.some(b => b.utr_number && b.utr_number.toUpperCase() === c.utr_number.toUpperCase());
+        const intraDup = seenUtrsInFile[c.utr_number] > 1;
+        if (dbDup || intraDup) { skippedDup++; return; }
+
+        const bankMatch = (db.statement_transactions || []).find(tx => tx.utr_number && tx.utr_number.trim().toUpperCase() === c.utr_number.toUpperCase());
+        const amount = c.amount > 0 ? c.amount : (bankMatch ? bankMatch.amount : 0);
+
+        let bill = db.mess_bills.find(b => b.student_id === student.id && b.month === c.month);
+        if (!bill) {
+          bill = {
+            id: "B_" + Math.floor(100000 + Math.random() * 900000),
+            student_id: student.id,
+            session_id: `BULK_IMPORT_${c.month.replace(' ', '_')}`,
+            month: c.month,
+            academic_year: student.academic_year,
+            amount: amount,
+            due_date: '',
+            payment_date: c.payment_date || '',
+            utr_number: c.utr_number,
+            amount_paid: amount,
+            payment_status: "Paid",
+            verification_status: "Pending Verification",
+            verified_by: null,
+            verified_at: null
+          };
+          db.mess_bills.push(bill);
+        } else {
+          bill.utr_number = c.utr_number;
+          bill.amount_paid = amount;
+          if (c.payment_date) bill.payment_date = c.payment_date;
+          bill.payment_status = "Paid";
+        }
+
+        if (bankMatch) {
+          bill.verification_status = 'Verified';
+          bill.verified_by = 'Auto-Approved (Bank UTR Match)';
+          bill.verified_at = `${new Date().toISOString().split('T')[0]} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+          autoApproved++;
+        } else {
+          bill.verification_status = 'Pending Verification';
+        }
+
+        imported++;
+      });
+
+      saveDatabase();
+      document.getElementById('bulkUtrPreviewArea')?.classList.add('hidden');
+      document.getElementById('bulkUtrFileInput').value = '';
+      pendingBulkUtrRecords = [];
+      renderBillsManagement();
+      renderVerificationQueue();
+      renderAdminOverview();
+      if (currentStudentDetailsId) renderStudentDetailsView(currentStudentDetailsId);
+
+      let msg = `${imported} old payment record(s) imported`;
+      if (autoApproved > 0) msg += ` (${autoApproved} auto-approved via bank UTR match)`;
+      msg += `.`;
+      if (skippedNotFound > 0) msg += ` ${skippedNotFound} skipped — Hall Ticket not found.`;
+      if (skippedDup > 0) msg += ` ${skippedDup} skipped — duplicate UTR.`;
+      if (skippedNoMonth > 0) msg += ` ${skippedNoMonth} skipped — no month specified.`;
+      showToast(msg, (skippedNotFound || skippedDup || skippedNoMonth) ? "warning" : "success");
+    }
+
+    function downloadBulkUtrTemplate() {
+      const csv = "Hall Ticket Number,Student Name,Month,UTR Number,Amount,Payment Date\n" +
+                  "22A91A0591,Ramesh Chandra,August 2026,UTR80801,2500,2026-08-05\n" +
+                  "22A91A0512,Aditi Verma,August 2026,UTR80802,2500,2026-08-06\n";
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "JNTUH_UCE_MBD_Bulk_UTR_Import_Template.csv";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -3281,6 +3782,7 @@
 
       document.getElementById('sdHallTicket').textContent = student.hall_ticket_no || '—';
       document.getElementById('sdName').textContent = student.name || '—';
+      document.getElementById('sdMobile').textContent = student.mobile_number || 'Not on file';
       document.getElementById('sdBranch').textContent = student.branch || '—';
       document.getElementById('sdSemester').textContent = student.semester || '—';
       document.getElementById('sdRegulation').textContent = student.regulation || '—';
@@ -3334,10 +3836,54 @@
                 <i class="fa-solid fa-receipt"></i> Receipt
               </button>
             ` : ''}
+            <button onclick="sendWhatsAppMessage('${student.id}', '${bill.id}')" title="Send WhatsApp update for this month" class="touch-target px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200">
+              <i class="fa-brands fa-whatsapp"></i>
+            </button>
           </td>
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    function sendWhatsAppMessage(studentId, billId = null) {
+      const student = db.students.find(s => s.id === studentId);
+      if (!student) {
+        showToast("Student not found", "error");
+        return;
+      }
+
+      let mobile = (student.mobile_number || '').toString().replace(/\D/g, '');
+      if (!mobile) {
+        showToast(`No mobile number on file for ${student.name}. Please add it via Edit Student first.`, "warning");
+        return;
+      }
+      if (mobile.length === 10) mobile = '91' + mobile;
+
+      let bill = null;
+      if (billId) {
+        bill = db.mess_bills.find(b => b.id === billId);
+      } else {
+        const bills = db.mess_bills.filter(b => b.student_id === studentId).sort((a, b) => (a.month > b.month ? 1 : -1));
+        bill = bills.length ? bills[bills.length - 1] : null;
+      }
+
+      if (!bill) {
+        showToast("No mess bill record found for this student to message about", "warning");
+        return;
+      }
+
+      const signature = "\n\n_Developed By A.Abhishek & P.Spandana_";
+      let message = "";
+
+      if (bill.verification_status === 'Verified') {
+        message = `Dear ${student.name},\n\n✅ Your mess fee payment for *${bill.month}* has been received and *VERIFIED* successfully.\n\nAmount Paid: ₹${bill.amount_paid || bill.amount}\nUTR Number: ${bill.utr_number || 'N/A'}\nHall Ticket No: ${student.hall_ticket_no}\n\nThank you for your timely payment.\n\nRegards,\nJNTUH UCE Mahabubabad - Mess Office${signature}`;
+      } else {
+        message = `Dear ${student.name},\n\n⚠️ This is a reminder that your mess fee for *${bill.month}* amounting to ₹${bill.amount} is still *DUE / NOT PAID*.\n\nHall Ticket No: ${student.hall_ticket_no}\n\nKindly make the payment at the earliest and share the UTR/transaction number with the mess office to get it verified.\n\nRegards,\nJNTUH UCE Mahabubabad - Mess Office${signature}`;
+      }
+
+      const url = `https://wa.me/${mobile}?text=${encodeURIComponent(message)}`;
+      window.open(url, '_blank');
+      showToast(`Opening WhatsApp to message ${student.name}...`, "info");
     }
 
     function renderAdminOverview() {
@@ -3362,6 +3908,8 @@
       const statDuplicateUTRs = document.getElementById('statDuplicateUTRs');
       const statNotFoundUTRs = document.getElementById('statNotFoundUTRs');
       const statVerifiedPayments = document.getElementById('statVerifiedPayments');
+      const statStatementTxnCount = document.getElementById('statStatementTxnCount');
+      const statStatementUploadCount = document.getElementById('statStatementUploadCount');
 
       if (statTotalStudents) statTotalStudents.textContent = totalStudents;
       if (statTotalExpected) statTotalExpected.textContent = '₹' + totalExpected.toLocaleString();
@@ -3372,6 +3920,8 @@
       if (statDuplicateUTRs) statDuplicateUTRs.textContent = duplicateCount;
       if (statNotFoundUTRs) statNotFoundUTRs.textContent = notFoundCount;
       if (statVerifiedPayments) statVerifiedPayments.textContent = verifiedBills.length;
+      if (statStatementTxnCount) statStatementTxnCount.textContent = (db.statement_transactions || []).length;
+      if (statStatementUploadCount) statStatementUploadCount.textContent = `${(db.payment_statements || []).length} statement(s) uploaded`;
 
       const aNavBadgePending = document.getElementById('aNavBadgePending');
       const aNavBadgeAlerts = document.getElementById('aNavBadgeAlerts');
@@ -3808,7 +4358,7 @@
       if (search) list = list.filter(s => s.name.toLowerCase().includes(search) || s.hall_ticket_no.toLowerCase().includes(search));
 
       if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="px-3 py-6 text-center text-slate-400 text-xs">No students registered yet in the database.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="px-3 py-6 text-center text-slate-400 text-xs">No students registered yet in the database.</td></tr>`;
         mCards.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs bg-slate-50 rounded-xl">No students registered.</div>`;
         return;
       }
@@ -3821,6 +4371,7 @@
             <button onclick="openStudentDetailsView('${student.id}')" title="View full student details" class="hover:underline cursor-pointer">${student.hall_ticket_no}</button>
           </td>
           <td class="px-3 py-2.5 font-semibold text-slate-800">${student.name}</td>
+          <td class="px-3 py-2.5 font-mono text-slate-700">${student.mobile_number || '—'}</td>
           <td class="px-3 py-2.5 text-slate-700">${student.branch}</td>
           <td class="px-3 py-2.5 font-medium text-slate-600">${student.semester}</td>
           <td class="px-3 py-2.5 font-medium text-slate-600">${student.regulation}</td>
@@ -3862,6 +4413,10 @@
             <span>${student.branch} • ${student.semester}</span>
             <span>${student.regulation} (${student.academic_year})</span>
           </div>
+          <div class="text-[11px] text-slate-500 flex items-center gap-1">
+            <i class="fa-solid fa-phone text-slate-400"></i>
+            <span>${student.mobile_number || 'No mobile number on file'}</span>
+          </div>
           <div class="pt-1 border-t border-slate-100 flex items-center justify-end gap-2">
             <button onclick="openEditStudentModal('${student.id}')" class="touch-target text-xs font-semibold text-blue-600 hover:text-blue-800 px-2 py-1">
               <i class="fa-solid fa-pen-to-square"></i> Edit
@@ -3885,6 +4440,7 @@
       document.getElementById('mStudentName').value = "";
       document.getElementById('mStudentHT').value = "";
       document.getElementById('mStudentHT').disabled = false;
+      document.getElementById('mStudentMobile').value = "";
       document.getElementById('studentModal').classList.remove('hidden');
     }
 
@@ -3898,6 +4454,7 @@
       document.getElementById('mStudentName').value = student.name;
       document.getElementById('mStudentHT').value = student.hall_ticket_no;
       document.getElementById('mStudentHT').disabled = true;
+      document.getElementById('mStudentMobile').value = student.mobile_number || '';
       document.getElementById('mStudentBranch').value = student.branch;
       document.getElementById('mStudentSemester').value = student.semester;
       document.getElementById('mStudentRegulation').value = student.regulation;
@@ -3916,10 +4473,16 @@
       const originalId = document.getElementById('studentFormOriginalId').value;
       const name = document.getElementById('mStudentName').value.trim();
       const ht = document.getElementById('mStudentHT').value.trim().toUpperCase();
+      const mobile = document.getElementById('mStudentMobile').value.trim().replace(/\D/g, '');
       const branch = document.getElementById('mStudentBranch').value;
       const semester = document.getElementById('mStudentSemester').value;
       const regulation = document.getElementById('mStudentRegulation').value;
       const acaYear = document.getElementById('mStudentAcaYear').value;
+
+      if (mobile && mobile.length !== 10) {
+        showToast("Please enter a valid 10-digit mobile number", "error");
+        return;
+      }
 
       if (mode === 'add') {
         const existing = db.students.find(s => s.hall_ticket_no.toUpperCase() === ht);
@@ -3932,6 +4495,7 @@
           id: "S_" + Date.now(),
           hall_ticket_no: ht,
           name: name,
+          mobile_number: mobile,
           branch: branch,
           semester: semester,
           regulation: regulation,
@@ -3944,6 +4508,7 @@
         const student = db.students.find(s => s.id === originalId);
         if (student) {
           student.name = name;
+          student.mobile_number = mobile;
           student.branch = branch;
           student.semester = semester;
           student.regulation = regulation;
@@ -3956,6 +4521,7 @@
       closeStudentModal();
       renderStudentDirectory();
       renderAdminOverview();
+      if (currentStudentDetailsId) renderStudentDetailsView(currentStudentDetailsId);
     }
 
     function toggleStudentStatus(studentId) {
@@ -4297,9 +4863,12 @@
       if (!tbody) return;
       tbody.innerHTML = '';
 
-      const stmt = db.payment_statements && db.payment_statements[0];
+      const statementCount = (db.payment_statements || []).length;
+      const txnCount = (db.statement_transactions || []).length;
       if (meta) {
-        meta.textContent = stmt ? `${stmt.file_name} (${stmt.file_type}) • Uploaded ${stmt.uploaded_at} • ${db.statement_transactions.length} records` : 'No active statement loaded';
+        meta.textContent = txnCount > 0 
+          ? `${txnCount} transaction(s) stored in database across ${statementCount} uploaded statement(s)`
+          : 'No statement transactions stored yet';
       }
 
       if (!db.statement_transactions || db.statement_transactions.length === 0) {
@@ -4392,12 +4961,11 @@
         if (!rawUtr || rawUtr === "UTR" || rawUtr === "TRANSACTION NUMBER") continue;
 
         const dateVal = row[dateCol] ? String(row[dateCol]).trim() : "2026-09-04";
-        const amtVal = parseFloat(String(row[amountCol]).replace(/[^0-9.]/g, '')) || 2500;
+        const amtVal = parseFloat(String(row[amountCol]).replace(/[^0-9.]/g, '')) || 0;
         const descVal = row[descCol] ? String(row[descCol]).trim() : "Bank Credit";
 
         txns.push({
-          id: "TXN_" + (i + 100),
-          statement_id: "STMT_" + Date.now(),
+          id: "TXN_" + Date.now() + "_" + i,
           utr_number: rawUtr,
           transaction_date: dateVal,
           amount: amtVal,
@@ -4410,20 +4978,120 @@
         return;
       }
 
-      db.statement_transactions = txns;
-      db.payment_statements = [{
+      pendingStatementTxns = txns;
+      pendingStatementFileMeta = { file_name: fileName, file_type: fileType };
+      renderStatementPreview();
+      showToast(`Parsed ${txns.length} transactions from ${fileName} — review and click "Submit to Database" to save them`, "info");
+    }
+
+    function renderStatementPreview() {
+      const area = document.getElementById('statementPreviewArea');
+      const tbody = document.getElementById('statementPreviewTbody');
+      const meta = document.getElementById('statementPreviewMeta');
+      if (!area || !tbody) return;
+
+      if (!pendingStatementTxns.length) {
+        area.classList.add('hidden');
+        return;
+      }
+
+      area.classList.remove('hidden');
+      tbody.innerHTML = '';
+
+      const existingUtrSet = new Set((db.statement_transactions || []).map(tx => tx.utr_number.toUpperCase()));
+      const seenInFile = {};
+      pendingStatementTxns.forEach(tx => { seenInFile[tx.utr_number] = (seenInFile[tx.utr_number] || 0) + 1; });
+
+      let newCount = 0, dupCount = 0;
+
+      pendingStatementTxns.forEach(tx => {
+        const alreadyStored = existingUtrSet.has(tx.utr_number.toUpperCase());
+        const intraDup = seenInFile[tx.utr_number] > 1;
+        const isDup = alreadyStored || intraDup;
+        if (isDup) dupCount++; else newCount++;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-3 py-2 text-slate-700 font-medium">${tx.transaction_date}</td>
+          <td class="px-3 py-2 font-mono font-bold text-slate-900">${tx.utr_number}</td>
+          <td class="px-3 py-2 font-bold text-emerald-700">₹${tx.amount.toLocaleString()}</td>
+          <td class="px-3 py-2 text-slate-600 text-[11px] truncate max-w-xs">${tx.description}</td>
+          <td class="px-3 py-2">
+            ${isDup ? 
+              `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Already in DB — will skip</span>` : 
+              `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">New — will be saved</span>`
+            }
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (meta) {
+        meta.textContent = `${pendingStatementTxns.length} transaction(s) parsed from ${pendingStatementFileMeta?.file_name || 'file'} — ${newCount} new, ${dupCount} already stored (will be skipped)`;
+      }
+    }
+
+    function submitStatementsToDatabase() {
+      if (!pendingStatementTxns.length) {
+        showToast("Nothing to submit — upload a statement file first", "warning");
+        return;
+      }
+
+      const existingUtrSet = new Set((db.statement_transactions || []).map(tx => tx.utr_number.toUpperCase()));
+      const seenInFile = new Set();
+      let added = 0, skipped = 0;
+
+      pendingStatementTxns.forEach(tx => {
+        const key = tx.utr_number.toUpperCase();
+        if (existingUtrSet.has(key) || seenInFile.has(key)) {
+          skipped++;
+          return;
+        }
+        seenInFile.add(key);
+        db.statement_transactions.push({
+          id: "TXN_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
+          statement_id: "STMT_" + Date.now(),
+          utr_number: tx.utr_number,
+          transaction_date: tx.transaction_date,
+          amount: tx.amount,
+          description: tx.description
+        });
+        added++;
+      });
+
+      db.payment_statements.push({
         id: "STMT_" + Date.now(),
-        file_name: fileName,
-        file_type: fileType,
+        file_name: pendingStatementFileMeta?.file_name || 'Unknown file',
+        file_type: pendingStatementFileMeta?.file_type || 'Unknown',
         uploaded_by: db.settings.verifierName || "Chief Warden",
         uploaded_at: `${new Date().toISOString().split('T')[0]} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-        processing_status: "Processed"
-      }];
+        processing_status: "Processed",
+        records_added: added,
+        records_skipped: skipped
+      });
 
       saveDatabase();
+
+      pendingStatementTxns = [];
+      pendingStatementFileMeta = null;
+      document.getElementById('statementPreviewArea')?.classList.add('hidden');
+      document.getElementById('statementFileInput').value = '';
+
       renderStatementTransactions();
-      showToast(`Loaded ${txns.length} transactions from ${fileName}`, "success");
+      renderAdminOverview();
+      renderVerificationQueue();
+      if (currentStudentDetailsId) renderStudentDetailsView(currentStudentDetailsId);
+
+      showToast(`${added} transaction(s) saved to database${skipped > 0 ? `, ${skipped} skipped as already stored` : ''}. Total stored: ${db.statement_transactions.length}`, "success");
       setTimeout(() => triggerRunCrossCheck(), 400);
+    }
+
+    function discardStatementPreview() {
+      pendingStatementTxns = [];
+      pendingStatementFileMeta = null;
+      document.getElementById('statementPreviewArea')?.classList.add('hidden');
+      document.getElementById('statementFileInput').value = '';
+      showToast("Preview discarded — nothing was saved to the database", "info");
     }
 
     function handleDragOver(e) {
@@ -4648,6 +5316,10 @@
     window.handleStudentBulkFile = handleStudentBulkFile;
     window.confirmBulkImportStudents = confirmBulkImportStudents;
     window.downloadStudentImportTemplate = downloadStudentImportTemplate;
+    window.handleBulkUtrDrop = handleBulkUtrDrop;
+    window.handleBulkUtrFileSelected = handleBulkUtrFileSelected;
+    window.confirmBulkUtrImport = confirmBulkUtrImport;
+    window.downloadBulkUtrTemplate = downloadBulkUtrTemplate;
     window.navigateAdminRoute = navigateAdminRoute;
     window.renderAdminPortal = renderAdminPortal;
     window.renderAdminOverview = renderAdminOverview;
@@ -4665,6 +5337,7 @@
     window.openStudentDetailsView = openStudentDetailsView;
     window.lookupStudentDetailsByHT = lookupStudentDetailsByHT;
     window.renderStudentDetailsView = renderStudentDetailsView;
+    window.sendWhatsAppMessage = sendWhatsAppMessage;
     window.filterStudentList = filterStudentList;
     window.openAddStudentModal = openAddStudentModal;
     window.openEditStudentModal = openEditStudentModal;
@@ -4690,6 +5363,8 @@
     window.handleDragLeave = handleDragLeave;
     window.handleDropFile = handleDropFile;
     window.downloadSampleCSVTemplate = downloadSampleCSVTemplate;
+    window.submitStatementsToDatabase = submitStatementsToDatabase;
+    window.discardStatementPreview = discardStatementPreview;
     window.generateReportData = generateReportData;
     window.exportReport = exportReport;
     window.viewReceipt = viewReceipt;
