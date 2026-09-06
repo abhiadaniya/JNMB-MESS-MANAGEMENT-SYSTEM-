@@ -388,12 +388,38 @@
   <!-- ========================================================================= -->
   <!-- 3. ADMIN DASHBOARD WITH CONSTANT FIXED LEFT SIDEBAR                        -->
   <!-- ========================================================================= -->
-  <div id="adminLayoutContainer" class="flex-1 flex h-screen w-full overflow-hidden">
+  <div id="adminLayoutContainer" class="flex-1 flex h-screen w-full overflow-hidden relative">
+
+    <!-- Mobile Top Bar (hamburger menu — visible below lg breakpoint only) -->
+    <div class="lg:hidden fixed top-0 inset-x-0 z-30 bg-[#0b1329] h-14 flex items-center justify-between px-2 shadow-md">
+      <button onclick="toggleAdminSidebar()" id="btnOpenAdminSidebar" class="touch-target w-10 h-10 flex items-center justify-center text-white rounded-lg hover:bg-white/10 active:bg-white/20 flex-shrink-0">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+      <div class="flex items-center gap-2 min-w-0 flex-1 justify-center px-1">
+        <div class="w-6 h-6 rounded-md bg-white/10 p-0.5 flex items-center justify-center flex-shrink-0 border border-white/10">
+          <img 
+            src="https://upload.wikimedia.org/wikipedia/en/thumb/e/ea/JNTU_Hyderabad_logo.png/250px-JNTU_Hyderabad_logo.png?utm_source=en.wikipedia.org&utm_campaign=parser&utm_content=thumbnail" 
+            alt="JNTUH Logo" 
+            class="w-full h-full object-contain" 
+            onerror="this.onerror=null; this.src='https://placehold.co/100x100/1e3a8a/ffffff?text=JNTUH'"
+          />
+        </div>
+        <div class="font-extrabold tracking-tight text-white uppercase text-[10px] truncate leading-tight">JNTUH UCE MBD Mess</div>
+      </div>
+      <span id="aNavBadgeAlertsMobile" class="text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 min-w-[20px] text-center">0</span>
+    </div>
+
+    <!-- Backdrop overlay behind the sidebar drawer on mobile -->
+    <div 
+      id="adminSidebarBackdrop" 
+      onclick="closeAdminSidebar()" 
+      class="hidden lg:hidden fixed inset-0 bg-slate-900/50 z-40"
+    ></div>
     
-    <!-- CONSTANT FIXED LEFT SIDEBAR (Never collapses, never moves away) -->
+    <!-- Sidebar: off-canvas drawer on mobile/tablet, static fixed column on lg+ -->
     <aside 
       id="adminSidebar" 
-      class="w-60 sm:w-64 bg-white border-r border-slate-200 flex flex-col flex-shrink-0 h-full z-40 select-none shadow-xs"
+      class="fixed inset-y-0 left-0 z-50 w-72 max-w-[82vw] bg-white border-r border-slate-200 flex flex-col h-full select-none shadow-2xl transform -translate-x-full transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:z-40 lg:shadow-xs lg:w-64 lg:max-w-none flex-shrink-0"
     >
       <!-- Top Dark Header of Sidebar -->
       <div class="bg-[#0b1329] px-3.5 py-3 flex items-center gap-2.5 border-b border-slate-800">
@@ -405,7 +431,7 @@
             onerror="this.onerror=null; this.src='https://placehold.co/100x100/1e3a8a/ffffff?text=JNTUH'"
           />
         </div>
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1">
           <div class="font-extrabold tracking-tight text-white uppercase text-[11px] truncate leading-tight">
             JNTUH UCE MAHABUBABAD
           </div>
@@ -413,6 +439,9 @@
             Mess Management
           </div>
         </div>
+        <button onclick="closeAdminSidebar()" class="touch-target lg:hidden w-8 h-8 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded-lg flex-shrink-0">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
       <!-- Admin Control Subheading Banner -->
@@ -512,7 +541,7 @@
     </aside>
 
     <!-- Admin Main Scrollable Content Area (Right side) -->
-    <main class="flex-1 min-w-0 h-full overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <main class="flex-1 min-w-0 h-full overflow-y-auto px-4 pt-20 pb-4 sm:px-6 sm:pt-24 sm:pb-6 lg:p-8 space-y-6">
       
       <!-- ADMIN VIEW 1: DASHBOARD OVERVIEW -->
       <section id="aRoute_dashboard" class="space-y-6">
@@ -3701,8 +3730,37 @@
       handleLoadSessionStudents();
     }
 
+    function toggleAdminSidebar() {
+      const sidebar = document.getElementById('adminSidebar');
+      if (!sidebar) return;
+      if (sidebar.classList.contains('-translate-x-full')) {
+        openAdminSidebar();
+      } else {
+        closeAdminSidebar();
+      }
+    }
+
+    function openAdminSidebar() {
+      const sidebar = document.getElementById('adminSidebar');
+      const backdrop = document.getElementById('adminSidebarBackdrop');
+      if (!sidebar) return;
+      sidebar.classList.remove('-translate-x-full');
+      sidebar.classList.add('translate-x-0');
+      backdrop?.classList.remove('hidden');
+    }
+
+    function closeAdminSidebar() {
+      const sidebar = document.getElementById('adminSidebar');
+      const backdrop = document.getElementById('adminSidebarBackdrop');
+      if (!sidebar) return;
+      sidebar.classList.add('-translate-x-full');
+      sidebar.classList.remove('translate-x-0');
+      backdrop?.classList.add('hidden');
+    }
+
     function navigateAdminRoute(route) {
       currentAdminRoute = route;
+      closeAdminSidebar();
 
       const routes = ['dashboard', 'registration', 'students', 'student-details', 'sessions', 'mess-bills', 'payments', 'statements', 'reports', 'settings'];
       routes.forEach(r => {
@@ -3925,8 +3983,10 @@
 
       const aNavBadgePending = document.getElementById('aNavBadgePending');
       const aNavBadgeAlerts = document.getElementById('aNavBadgeAlerts');
+      const aNavBadgeAlertsMobile = document.getElementById('aNavBadgeAlertsMobile');
       if (aNavBadgePending) aNavBadgePending.textContent = pendingCount;
       if (aNavBadgeAlerts) aNavBadgeAlerts.textContent = (duplicateCount + notFoundCount);
+      if (aNavBadgeAlertsMobile) aNavBadgeAlertsMobile.textContent = (pendingCount + duplicateCount + notFoundCount);
 
       applyOverviewFilters();
     }
@@ -5321,6 +5381,9 @@
     window.confirmBulkUtrImport = confirmBulkUtrImport;
     window.downloadBulkUtrTemplate = downloadBulkUtrTemplate;
     window.navigateAdminRoute = navigateAdminRoute;
+    window.toggleAdminSidebar = toggleAdminSidebar;
+    window.openAdminSidebar = openAdminSidebar;
+    window.closeAdminSidebar = closeAdminSidebar;
     window.renderAdminPortal = renderAdminPortal;
     window.renderAdminOverview = renderAdminOverview;
     window.applyOverviewFilters = applyOverviewFilters;
