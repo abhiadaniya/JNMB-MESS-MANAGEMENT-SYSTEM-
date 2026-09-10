@@ -322,19 +322,13 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { firebaseConfig as userFirebaseConfig, appId as userAppId } from "./firebase-config.js";
 
-    const userFirebaseConfig = {
-      apiKey: "AIzaSyDm8w7KJ5ExCu1OUv5b19E8hT_NyIQ8beU",
-      authDomain: "jnmb-cms.firebaseapp.com",
-      projectId: "jnmb-cms",
-      storageBucket: "jnmb-cms.firebasestorage.app",
-      messagingSenderId: "60742956237",
-      appId: "1:60742956237:web:6ff7aaab70a718e1afe584",
-      measurementId: "G-F3QNRB8YG7"
-    };
-
+    // API key is no longer hardcoded here — it now lives only in firebase-config.js
+    // (same file/pattern used by index.html). Keep firebase-config.js next to this
+    // file on your web host, and do not commit it to a public repo.
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userFirebaseConfig;
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'jnmb-cms';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : userAppId;
 
     let app = null;
     let firestore = null;

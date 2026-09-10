@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>JNTUH UCE Mahabubabad - Staff Dashboard</title>
+
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Font Awesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+<!-- SheetJS for Excel / CSV import & export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- Google Fonts: Inter -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'sans-serif'] },
+        colors: {
+          brand: {
+            50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6',
+            600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a',
+          }
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+    -webkit-tap-highlight-color: transparent;
+  }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: #f1f5f9; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .touch-target { min-height: 44px; min-width: 44px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+</style>
+</head>
+<body class="h-full flex flex-col antialiased selection:bg-blue-600 selection:text-white bg-slate-50">
+
+  <!-- ========================================================================= -->
+  <!-- LOGIN SCREEN                                                               -->
+  <!-- ========================================================================= -->
+  <div id="staffLoginContainer" class="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 space-y-5">
+      <div class="text-center space-y-2">
+        <img
+          src="https://upload.wikimedia.org/wikipedia/en/thumb/e/ea/JNTU_Hyderabad_logo.png/250px-JNTU_Hyderabad_logo.png?utm_source=en.wikipedia.org&utm_campaign=parser&utm_content=thumbnail"
+          alt="JNTUH Logo"
+          class="w-14 h-14 object-contain rounded-full bg-white p-1 border border-slate-200 shadow-xs mx-auto"
+          onerror="this.onerror=null; this.src='https://placehold.co/100x100/1e3a8a/ffffff?text=JNTUH'"
+        />
+        <h1 class="text-sm font-black uppercase tracking-wider text-slate-900">JNTUH UCE Mahabubabad</h1>
+        <p class="text-xs text-blue-600 font-bold">Mess Office — Staff Dashboard</p>
+      </div>
+
+      <form id="staffAuthForm" onsubmit="handleStaffAuthSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1 text-xs">Staff Email</label>
+          <input type="email" id="staffAuthEmail" required placeholder="staff@jntuh-uce.ac.in" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1 text-xs">Password</label>
+          <div class="relative">
+            <input type="password" id="staffAuthPassword" required placeholder="••••••••" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 pr-10 text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            <button type="button" onclick="toggleStaffPasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <i id="staffAuthPassIcon" class="fa-solid fa-eye text-xs"></i>
+            </button>
+          </div>
+        </div>
+        <button id="staffAuthSubmitBtn" type="submit" class="touch-target w-full bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all">
+          <i class="fa-solid fa-right-to-bracket mr-1.5"></i> Sign In to Staff Dashboard
+        </button>
+      </form>
+      <p class="text-[10px] text-slate-400 text-center leading-relaxed">
+        Uses the same staff/admin login as the main Mess Management System. Contact the Chief Warden's office if you don't have credentials.
+      </p>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- STAFF APP SHELL                                                            -->
+  <!-- ========================================================================= -->
+  <div id="staffAppContainer" class="hidden flex flex-col h-full">
+
+    <!-- Top bar -->
+    <header class="bg-white border-b border-slate-200 shadow-sm px-3 sm:px-5 py-3 flex items-center justify-between gap-3 no-print">
+      <div class="flex items-center gap-2.5">
+        <img
+          src="https://upload.wikimedia.org/wikipedia/en/thumb/e/ea/JNTU_Hyderabad_logo.png/250px-JNTU_Hyderabad_logo.png?utm_source=en.wikipedia.org&utm_campaign=parser&utm_content=thumbnail"
+          alt="JNTUH Logo"
+          class="w-8 h-8 object-contain rounded-full bg-white p-0.5 border border-slate-200 shadow-xs"
+          onerror="this.onerror=null; this.src='https://placehold.co/100x100/1e3a8a/ffffff?text=JNTUH'"
+        />
+        <div>
+          <span class="font-black uppercase tracking-wider text-[11px] block text-slate-900 leading-tight">JNTUH UCE MAHABUBABAD</span>
+          <span class="text-[10px] text-blue-600 font-semibold flex items-center gap-1">
+            <span id="dbStatusDot" class="w-2 h-2 rounded-full bg-amber-500"></span>
+            <span id="dbStatusText">Connecting...</span>
+          </span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="index.html" class="touch-target hidden sm:flex px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl items-center gap-1.5">
+          <i class="fa-solid fa-gauge text-[10px]"></i> Full Admin Panel
+        </a>
+        <span id="staffUserBadge" class="hidden sm:inline text-[11px] font-semibold text-slate-500"></span>
+        <button onclick="handleStaffLogout()" class="touch-target px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl flex items-center gap-1.5">
+          <i class="fa-solid fa-right-from-bracket text-[10px]"></i> <span class="hidden sm:inline">Logout</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Tab nav -->
+    <nav class="bg-white border-b border-slate-200 px-2 sm:px-5 flex items-center gap-1 overflow-x-auto no-scrollbar no-print">
+      <button onclick="navigateStaffTab('students')" id="sNav_students" class="staff-tab-btn touch-target px-3.5 py-3 text-xs font-bold border-b-2 border-blue-600 text-blue-700 flex items-center gap-1.5 whitespace-nowrap">
+        <i class="fa-solid fa-users"></i> Student Details
+      </button>
+      <button onclick="navigateStaffTab('sessions')" id="sNav_sessions" class="staff-tab-btn touch-target px-3.5 py-3 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
+        <i class="fa-solid fa-money-check-dollar"></i> Payment Sessions
+      </button>
+      <button onclick="navigateStaffTab('statements')" id="sNav_statements" class="staff-tab-btn touch-target px-3.5 py-3 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
+        <i class="fa-solid fa-file-arrow-up"></i> Statement Upload
+      </button>
+      <button onclick="navigateStaffTab('reports')" id="sNav_reports" class="staff-tab-btn touch-target px-3.5 py-3 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
+        <i class="fa-solid fa-chart-column"></i> Monthly Report
+      </button>
+    </nav>
+
+    <main class="flex-1 overflow-y-auto px-3 sm:px-5 py-4 max-w-6xl w-full mx-auto">
+
+      <!-- =====================================================================
+           TAB 1: STUDENT DETAILS
+      ====================================================================== -->
+      <section id="tabPanel_students" class="tab-panel active space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h2 class="text-sm font-black text-slate-900"><i class="fa-solid fa-users text-blue-600 mr-1"></i> Student Directory</h2>
+            <span id="studentDirCount" class="text-[11px] font-semibold text-slate-500">0 students</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+            <input type="text" id="stuSearchInput" oninput="renderStudentDirectory()" placeholder="Search name or hall ticket no..." class="sm:col-span-2 bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            <select id="stuFilterBranch" onchange="renderStudentDirectory()" class="bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium">
+              <option value="ALL">All Departments</option>
+              <option value="CSE">CSE</option>
+              <option value="CSE – Data Science">CSE – Data Science</option>
+              <option value="ECE">ECE</option>
+              <option value="EEE">EEE</option>
+              <option value="Mechanical">Mechanical</option>
+            </select>
+            <select id="stuFilterStatus" onchange="renderStudentDirectory()" class="bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium">
+              <option value="ALL">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto no-scrollbar">
+            <table class="w-full text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
+                <tr>
+                  <th class="px-3 py-2.5 text-left">Hall Ticket</th>
+                  <th class="px-3 py-2.5 text-left">Name</th>
+                  <th class="px-3 py-2.5 text-left">Department</th>
+                  <th class="px-3 py-2.5 text-left">Semester</th>
+                  <th class="px-3 py-2.5 text-left">Mobile</th>
+                  <th class="px-3 py-2.5 text-left">Status</th>
+                  <th class="px-3 py-2.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="studentDirTableBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Student Detail Panel -->
+        <div id="studentDetailPanel" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-black text-slate-900"><i class="fa-solid fa-id-card text-blue-600 mr-1"></i> Student Details</h3>
+            <button onclick="closeStudentDetailPanel()" class="text-slate-400 hover:text-slate-700 text-sm"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div id="studentDetailContent"></div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           TAB 2: PAYMENT SESSIONS
+      ====================================================================== -->
+      <section id="tabPanel_sessions" class="tab-panel space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+          <h2 class="text-sm font-black text-slate-900"><i class="fa-solid fa-money-check-dollar text-blue-600 mr-1"></i> Start a Payment Session</h2>
+          <p class="text-[11px] text-slate-500">Load a batch of students by month + department to record UTRs and amounts in one pass.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+            <select id="sessMonth" class="bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium"></select>
+            <select id="sessBranch" class="bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium">
+              <option value="ALL">All Departments</option>
+              <option value="CSE">CSE</option>
+              <option value="CSE – Data Science">CSE – Data Science</option>
+              <option value="ECE">ECE</option>
+              <option value="EEE">EEE</option>
+              <option value="Mechanical">Mechanical</option>
+            </select>
+            <select id="sessSemester" class="bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium">
+              <option value="ALL">All Semesters</option>
+              <option value="I-I">I-I</option><option value="I-II">I-II</option>
+              <option value="II-I">II-I</option><option value="II-II">II-II</option>
+              <option value="III-I">III-I</option><option value="III-II">III-II</option>
+              <option value="IV-I">IV-I</option><option value="IV-II">IV-II</option>
+            </select>
+            <input type="number" id="sessDefaultAmount" placeholder="Default amount ₹" class="bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium" />
+            <button onclick="loadSessionStudents()" class="touch-target bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-magnifying-glass"></i> Load Students
+            </button>
+          </div>
+        </div>
+
+        <div id="sessionTableWrap" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-3 flex items-center justify-between border-b border-slate-100">
+            <span id="sessionMeta" class="text-[11px] font-semibold text-slate-500"></span>
+            <button onclick="submitSessionPayments()" class="touch-target px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center gap-1.5">
+              <i class="fa-solid fa-cloud-arrow-up"></i> Save Session Payments
+            </button>
+          </div>
+          <div class="overflow-x-auto no-scrollbar">
+            <table class="w-full text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
+                <tr>
+                  <th class="px-3 py-2.5 text-left">Hall Ticket</th>
+                  <th class="px-3 py-2.5 text-left">Name</th>
+                  <th class="px-3 py-2.5 text-left">UTR Number</th>
+                  <th class="px-3 py-2.5 text-left">Amount ₹</th>
+                  <th class="px-3 py-2.5 text-left">Payment Date</th>
+                </tr>
+              </thead>
+              <tbody id="sessionStudentsTableBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-2">
+          <h3 class="text-xs font-black text-slate-900"><i class="fa-solid fa-clock-rotate-left text-blue-600 mr-1"></i> Recent Sessions</h3>
+          <div id="sessionHistoryList" class="space-y-1.5 text-xs"></div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           TAB 3: STATEMENT UPLOAD
+      ====================================================================== -->
+      <section id="tabPanel_statements" class="tab-panel space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h2 class="text-sm font-black text-slate-900"><i class="fa-solid fa-file-arrow-up text-blue-600 mr-1"></i> Upload Bank Statement</h2>
+            <button onclick="downloadSampleCSVTemplate()" class="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-download"></i> Template CSV
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-500">Columns expected: Transaction Date, UTR Number, Amount, Narration / Payer Name. Accepts .xlsx, .xls, .csv</p>
+          <div
+            id="dropZone"
+            onclick="document.getElementById('statementFileInput').click()"
+            ondragover="handleDragOver(event)"
+            ondragleave="handleDragLeave(event)"
+            ondrop="handleDropFile(event)"
+            class="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50/60 hover:bg-blue-50/20 rounded-2xl p-6 text-center cursor-pointer transition-all space-y-2"
+          >
+            <input type="file" id="statementFileInput" accept=".xlsx,.xls,.csv,.txt" class="hidden" onchange="handleFileSelected(event)" />
+            <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center mx-auto text-base">
+              <i class="fa-solid fa-file-invoice-dollar"></i>
+            </div>
+            <h4 class="text-xs sm:text-sm font-bold text-slate-800">Click or drop your bank statement file here</h4>
+            <p class="text-[10px] text-slate-400">Rows are matched against student payment UTR numbers automatically</p>
+          </div>
+
+          <div id="statementPreviewArea" class="hidden space-y-3 pt-2">
+            <div class="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] font-semibold">
+              <span id="statementPreviewMeta" class="text-slate-600"></span>
+              <div class="flex items-center gap-2">
+                <button onclick="discardStatementPreview()" class="touch-target px-3 py-1.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs">Discard</button>
+                <button onclick="submitStatementsToDatabase()" class="touch-target px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm">Submit to Database</button>
+              </div>
+            </div>
+            <div class="overflow-x-auto no-scrollbar rounded-xl border border-slate-200">
+              <table class="w-full text-xs">
+                <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
+                  <tr>
+                    <th class="px-3 py-2 text-left">Date</th>
+                    <th class="px-3 py-2 text-left">UTR</th>
+                    <th class="px-3 py-2 text-left">Amount</th>
+                    <th class="px-3 py-2 text-left">Description</th>
+                    <th class="px-3 py-2 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="statementPreviewTbody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-3 border-b border-slate-100">
+            <span id="statementActiveMeta" class="text-[11px] font-semibold text-slate-500">No statement transactions stored yet</span>
+          </div>
+          <div class="overflow-x-auto no-scrollbar max-h-96 overflow-y-auto">
+            <table class="w-full text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold sticky top-0">
+                <tr>
+                  <th class="px-3 py-2.5 text-left">Date</th>
+                  <th class="px-3 py-2.5 text-left">UTR</th>
+                  <th class="px-3 py-2.5 text-left">Amount</th>
+                  <th class="px-3 py-2.5 text-left">Description</th>
+                  <th class="px-3 py-2.5 text-left">Match Status</th>
+                </tr>
+              </thead>
+              <tbody id="statementTxnTableBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           TAB 4: MONTHLY REPORT (BY DEPARTMENT) + WHATSAPP FORWARD
+      ====================================================================== -->
+      <section id="tabPanel_reports" class="tab-panel space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+          <h2 class="text-sm font-black text-slate-900"><i class="fa-solid fa-chart-column text-blue-600 mr-1"></i> Monthly Mess Report by Department</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <select id="repMonth" onchange="generateMonthlyDeptReport()" class="bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium"></select>
+            <select id="repBranchFilter" onchange="generateMonthlyDeptReport()" class="bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium">
+              <option value="ALL">All Departments</option>
+              <option value="CSE">CSE</option>
+              <option value="CSE – Data Science">CSE – Data Science</option>
+              <option value="ECE">ECE</option>
+              <option value="EEE">EEE</option>
+              <option value="Mechanical">Mechanical</option>
+            </select>
+            <div class="flex gap-2">
+              <button onclick="exportMonthlyReport('excel')" class="touch-target flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-file-excel"></i> Excel
+              </button>
+              <button onclick="exportMonthlyReport('csv')" class="touch-target flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-file-csv"></i> CSV
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Department breakdown table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-3 border-b border-slate-100">
+            <span id="repMeta" class="text-[11px] font-semibold text-slate-500"></span>
+          </div>
+          <div class="overflow-x-auto no-scrollbar">
+            <table class="w-full text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
+                <tr>
+                  <th class="px-3 py-2.5 text-left">Department</th>
+                  <th class="px-3 py-2.5 text-right">Students</th>
+                  <th class="px-3 py-2.5 text-right">Billed</th>
+                  <th class="px-3 py-2.5 text-right">Not Billed</th>
+                  <th class="px-3 py-2.5 text-right">Expected ₹</th>
+                  <th class="px-3 py-2.5 text-right">Collected ₹</th>
+                  <th class="px-3 py-2.5 text-right">Verified ₹</th>
+                  <th class="px-3 py-2.5 text-right">Pending ₹</th>
+                  <th class="px-3 py-2.5 text-right">Collection %</th>
+                </tr>
+              </thead>
+              <tbody id="repDeptTableBody" class="divide-y divide-slate-100"></tbody>
+              <tfoot id="repDeptTableFoot" class="bg-slate-50 font-bold"></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- WhatsApp forward -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+          <h3 class="text-xs font-black text-slate-900"><i class="fa-brands fa-whatsapp text-emerald-600 mr-1"></i> Forward This Month's Report via WhatsApp</h3>
+          <p class="text-[11px] text-slate-500">Sends a department-wise text summary for the selected month to any WhatsApp number (e.g. Chief Warden, HOD, or a staff group admin).</p>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="tel" id="reportForwardPhone" placeholder="Recipient mobile e.g. 9876543210" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-mono font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            <button onclick="forwardMonthlyReportWhatsApp()" class="touch-target px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5">
+              <i class="fa-brands fa-whatsapp"></i> Forward Report
+            </button>
+          </div>
+        </div>
+
+        <!-- Pending students for the month -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-3 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+            <span id="repPendingMeta" class="text-[11px] font-semibold text-slate-500">Pending / unpaid students for the selected month</span>
+          </div>
+          <div class="overflow-x-auto no-scrollbar max-h-96 overflow-y-auto">
+            <table class="w-full text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold sticky top-0">
+                <tr>
+                  <th class="px-3 py-2.5 text-left">Hall Ticket</th>
+                  <th class="px-3 py-2.5 text-left">Name</th>
+                  <th class="px-3 py-2.5 text-left">Department</th>
+                  <th class="px-3 py-2.5 text-left">Status</th>
+                  <th class="px-3 py-2.5 text-right">Reminder</th>
+                </tr>
+              </thead>
+              <tbody id="repPendingTableBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-xs sm:max-w-sm w-full pointer-events-none px-3"></div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT CORE & FIREBASE DATA SYNC (shares the same database as         -->
+  <!-- index.html / student.html — API key lives only in firebase-config.js)     -->
+  <!-- ========================================================================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { firebaseConfig as userFirebaseConfig, appId as userAppId } from "./firebase-config.js";
+
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userFirebaseConfig;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : userAppId;
+
+    let app = null, auth = null, firestore = null;
+    try {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      firestore = getFirestore(app);
+    } catch (fbInitErr) {
+      console.warn("Firebase initialize status:", fbInitErr);
+    }
+
+    let currentUser = null;
+
+    const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const BRANCHES = ["CSE", "CSE – Data Science", "ECE", "EEE", "Mechanical"];
+
+    const INITIAL_SCHEMA = {
+      settings: {
+        instName: "JNTUH University College of Engineering Mahabubabad",
+        accName: "JNTUH UCE MAHABUBABAD HOSTEL MESS WELFARE FUND",
+        bankDetails: "State Bank of India - SBIN0021482",
+        verifierName: "Dr. M. K. Narayana (Chief Warden)"
+      },
+      students: [],
+      payment_sessions: [],
+      mess_bills: [],
+      payment_statements: [],
+      statement_transactions: []
+    };
+
+    let db = JSON.parse(JSON.stringify(INITIAL_SCHEMA));
+    let currentActiveTab = 'students';
+    let currentStudentDetailsId = null;
+    let currentActiveSessionFilter = null;
+    let currentLoadedSessionStudents = [];
+    let pendingStatementTxns = [];
+    let pendingStatementFileMeta = null;
+    let lastDeptReport = null; // cached for export / whatsapp forward
+
+    // ---------------------------------------------------------------------
+    // Utility: toast, badges, months
+    // ---------------------------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const toast = document.createElement('div');
+      const colors = {
+        success: 'bg-emerald-600 text-white border-emerald-700',
+        error: 'bg-rose-600 text-white border-rose-700',
+        warning: 'bg-amber-600 text-white border-amber-700',
+        info: 'bg-slate-900 text-white border-slate-800'
+      };
+      const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+      toast.className = `p-3 rounded-xl shadow-lg border text-xs font-semibold flex items-center gap-2 transition-all transform translate-y-2 opacity-0 duration-200 ${colors[type] || colors.info}`;
+      toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i> <span>${message}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-1');
+        setTimeout(() => toast.remove(), 250);
+      }, 3800);
+    }
+
+    function getStatusBadge(status) {
+      const map = {
+        'Verified': 'bg-emerald-100 text-emerald-800',
+        'Matched': 'bg-blue-100 text-blue-800',
+        'Pending Verification': 'bg-amber-100 text-amber-800',
+        'UTR Submitted': 'bg-amber-100 text-amber-800',
+        'Duplicate UTR': 'bg-rose-100 text-rose-800',
+        'Not Found': 'bg-rose-100 text-rose-800',
+        'Not Billed': 'bg-slate-100 text-slate-600'
+      };
+      const cls = map[status] || 'bg-slate-100 text-slate-600';
+      return `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${cls}">${status}</span>`;
+    }
+
+    function getAllMonthsList(startYear = 2022) {
+      const now = new Date();
+      const maxYear = Math.max(now.getFullYear() + 1, 2027);
+      const months = [];
+      for (let yr = maxYear; yr >= startYear; yr--) {
+        for (let m = 11; m >= 0; m--) months.push(`${MONTH_NAMES[m]} ${yr}`);
+      }
+      return months;
+    }
+
+    function populateMonthDropdowns() {
+      const months = getAllMonthsList(2022);
+      const now = new Date();
+      const currentMonthStr = `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
+      [['sessMonth', false], ['repMonth', false]].forEach(([id]) => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const prev = sel.value;
+        sel.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
+        sel.value = months.includes(prev) ? prev : (months.includes(currentMonthStr) ? currentMonthStr : months[0]);
+      });
+    }
+
+    // ---------------------------------------------------------------------
+    // Auth
+    // ---------------------------------------------------------------------
+    window.toggleStaffPasswordVisibility = function () {
+      const input = document.getElementById('staffAuthPassword');
+      const icon = document.getElementById('staffAuthPassIcon');
+      if (input.type === 'password') { input.type = 'text'; icon.className = 'fa-solid fa-eye-slash text-xs'; }
+      else { input.type = 'password'; icon.className = 'fa-solid fa-eye text-xs'; }
+    };
+
+    window.handleStaffAuthSubmit = async function (e) {
+      e.preventDefault();
+      const email = document.getElementById('staffAuthEmail').value.trim();
+      const password = document.getElementById('staffAuthPassword').value;
+      const btn = document.getElementById('staffAuthSubmitBtn');
+      if (!email || !password) { showToast("Please enter email and password", "warning"); return; }
+      btn.disabled = true; btn.classList.add('opacity-70');
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        showToast("Signed in successfully", "success");
+        document.getElementById('staffAuthForm').reset();
+      } catch (err) {
+        let msg = err.message || "Authentication failed";
+        if (['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password'].includes(err.code)) {
+          msg = "Invalid email or password. Contact the mess office administrator.";
+        } else if (err.code === 'auth/too-many-requests') {
+          msg = "Too many failed attempts. Try again later.";
+        }
+        showToast(msg, "error");
+      } finally {
+        btn.disabled = false; btn.classList.remove('opacity-70');
+      }
+    };
+
+    window.handleStaffLogout = async function () {
+      if (!auth) return;
+      try { await signOut(auth); currentUser = null; showToast("Logged out", "info"); }
+      catch (err) { showToast("Error signing out", "error"); }
+    };
+
+    function updateDbBadge(isConnected, text) {
+      const dot = document.getElementById('dbStatusDot');
+      const label = document.getElementById('dbStatusText');
+      if (dot) dot.className = isConnected ? "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" : "w-2 h-2 rounded-full bg-amber-500";
+      if (label) label.textContent = text;
+    }
+
+    function showLoginScreen(show) {
+      const login = document.getElementById('staffLoginContainer');
+      const appShell = document.getElementById('staffAppContainer');
+      if (show) { login?.classList.remove('hidden'); appShell?.classList.add('hidden'); }
+      else { login?.classList.add('hidden'); appShell?.classList.remove('hidden'); }
+    }
+
+    async function initFirebaseSync() {
+      if (!auth || !firestore) { updateDbBadge(false, "Offline / Local Mode"); return; }
+      onAuthStateChanged(auth, async (user) => {
+        currentUser = user;
+        if (!user) { updateDbBadge(false, "Signed Out"); showLoginScreen(true); return; }
+
+        showLoginScreen(false);
+        updateDbBadge(true, "Cloud Database: Connected");
+        const badge = document.getElementById('staffUserBadge');
+        if (badge && user.email) badge.textContent = user.email;
+
+        const stateDocRef = doc(firestore, 'artifacts', appId, 'public', 'data', 'mess_management', 'state');
+
+        try {
+          const snap = await getDoc(stateDocRef);
+          if (snap.exists()) mergeRemoteData(snap.data());
+        } catch (err) { console.warn("Firestore fetch notice:", err); }
+
+        onSnapshot(stateDocRef, (snap) => {
+          if (snap.exists()) {
+            mergeRemoteData(snap.data());
+            renderActiveTab();
+          }
+        }, (err) => console.warn("Realtime listener error:", err));
+
+        renderActiveTab();
+      });
+    }
+
+    function mergeRemoteData(data) {
+      if (!data) return;
+      db.students = Array.isArray(data.students) ? data.students : [];
+      db.payment_sessions = Array.isArray(data.payment_sessions) ? data.payment_sessions : [];
+      db.mess_bills = Array.isArray(data.mess_bills) ? data.mess_bills : [];
+      db.payment_statements = Array.isArray(data.payment_statements) ? data.payment_statements : [];
+      db.statement_transactions = Array.isArray(data.statement_transactions) ? data.statement_transactions : [];
+      if (data.settings) db.settings = data.settings;
+    }
+
+    async function saveDatabase() {
+      if (!currentUser || !firestore) { showToast("Not connected to database", "error"); return; }
+      try {
+        const stateDocRef = doc(firestore, 'artifacts', appId, 'public', 'data', 'mess_management', 'state');
+        await setDoc(stateDocRef, JSON.parse(JSON.stringify(db)));
+      } catch (err) {
+        console.warn("Cloud write note:", err);
+        showToast("Could not save to cloud database", "error");
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Tab navigation
+    // ---------------------------------------------------------------------
+    window.navigateStaffTab = function (tab) {
+      currentActiveTab = tab;
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(`tabPanel_${tab}`)?.classList.add('active');
+      document.querySelectorAll('.staff-tab-btn').forEach(b => {
+        b.classList.remove('border-blue-600', 'text-blue-700');
+        b.classList.add('border-transparent', 'text-slate-500');
+      });
+      const activeBtn = document.getElementById(`sNav_${tab}`);
+      if (activeBtn) { activeBtn.classList.add('border-blue-600', 'text-blue-700'); activeBtn.classList.remove('border-transparent', 'text-slate-500'); }
+      renderActiveTab();
+    };
+
+    function renderActiveTab() {
+      if (currentActiveTab === 'students') renderStudentDirectory();
+      else if (currentActiveTab === 'sessions') renderSessionHistory();
+      else if (currentActiveTab === 'statements') renderStatementTransactions();
+      else if (currentActiveTab === 'reports') generateMonthlyDeptReport();
+    }
+
+    // =======================================================================
+    // TAB 1: STUDENT DETAILS
+    // =======================================================================
+    window.renderStudentDirectory = function () {
+      const search = (document.getElementById('stuSearchInput')?.value || '').trim().toLowerCase();
+      const branch = document.getElementById('stuFilterBranch')?.value || 'ALL';
+      const status = document.getElementById('stuFilterStatus')?.value || 'ALL';
+
+      let list = db.students.slice();
+      if (search) list = list.filter(s => (s.name || '').toLowerCase().includes(search) || (s.hall_ticket_no || '').toLowerCase().includes(search));
+      if (branch !== 'ALL') list = list.filter(s => s.branch === branch);
+      if (status !== 'ALL') list = list.filter(s => s.status === status);
+
+      const countEl = document.getElementById('studentDirCount');
+      if (countEl) countEl.textContent = `${list.length} student(s)`;
+
+      const tbody = document.getElementById('studentDirTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="px-3 py-6 text-center text-slate-400 text-xs">No students match these filters.</td></tr>`;
+        return;
+      }
+
+      list.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-colors";
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-mono font-bold text-blue-700">${s.hall_ticket_no || '—'}</td>
+          <td class="px-3 py-2 font-semibold text-slate-800">${s.name || 'Unknown'}</td>
+          <td class="px-3 py-2 text-slate-600">${s.branch || '—'}</td>
+          <td class="px-3 py-2 text-slate-600">${s.semester || '—'}</td>
+          <td class="px-3 py-2 font-mono text-slate-600">${s.mobile_number || '—'}</td>
+          <td class="px-3 py-2">${s.status === 'Active' ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Active</span>' : '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">Inactive</span>'}</td>
+          <td class="px-3 py-2 text-right">
+            <button onclick="openStudentDetail('${s.id}')" class="touch-target px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-lg text-[11px]"><i class="fa-solid fa-eye"></i> View</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    };
+
+    window.filterStudentList = window.renderStudentDirectory;
+
+    window.openStudentDetail = function (studentId) {
+      currentStudentDetailsId = studentId;
+      const student = db.students.find(s => s.id === studentId);
+      const panel = document.getElementById('studentDetailPanel');
+      const content = document.getElementById('studentDetailContent');
+      if (!student || !panel || !content) return;
+
+      const bills = db.mess_bills.filter(b => b.student_id === studentId).sort((a, b) => (a.month < b.month ? 1 : -1));
+
+      content.innerHTML = `
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
+          <div><span class="text-slate-400 block text-[10px]">Name</span><strong class="text-slate-900">${student.name}</strong></div>
+          <div><span class="text-slate-400 block text-[10px]">Hall Ticket No</span><strong class="font-mono text-blue-700">${student.hall_ticket_no}</strong></div>
+          <div><span class="text-slate-400 block text-[10px]">Department</span><strong class="text-slate-900">${student.branch}</strong></div>
+          <div><span class="text-slate-400 block text-[10px]">Semester</span><strong class="text-slate-900">${student.semester}</strong></div>
+          <div><span class="text-slate-400 block text-[10px]">Mobile</span><strong class="font-mono text-slate-900">${student.mobile_number || '—'}</strong></div>
+          <div><span class="text-slate-400 block text-[10px]">Regulation</span><strong class="text-slate-900">${student.regulation || '—'}</strong></div>
+          <div><span class="text-slate-400 block text-[10px]">Academic Year</span><strong class="text-slate-900">${student.academic_year || '—'}</strong></div>
+          <div><span class="text-slate-400 block text-[10px]">Status</span><strong class="text-slate-900">${student.status}</strong></div>
+        </div>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-xs font-black text-slate-800">Mess Bill History</h4>
+          <button onclick="sendWhatsAppMessage('${student.id}')" class="touch-target px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-lg text-[11px] flex items-center gap-1.5">
+            <i class="fa-brands fa-whatsapp"></i> WhatsApp Latest Update
+          </button>
+        </div>
+        <div class="overflow-x-auto no-scrollbar rounded-xl border border-slate-200">
+          <table class="w-full text-xs">
+            <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
+              <tr>
+                <th class="px-3 py-2 text-left">Month</th>
+                <th class="px-3 py-2 text-left">Amount</th>
+                <th class="px-3 py-2 text-left">Paid</th>
+                <th class="px-3 py-2 text-left">UTR</th>
+                <th class="px-3 py-2 text-left">Status</th>
+                <th class="px-3 py-2 text-right">Reminder</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${bills.length === 0 ? `<tr><td colspan="6" class="px-3 py-4 text-center text-slate-400">No bills recorded yet.</td></tr>` : bills.map(b => `
+                <tr class="hover:bg-slate-50">
+                  <td class="px-3 py-2 font-medium text-slate-800">${b.month}</td>
+                  <td class="px-3 py-2 text-slate-700">₹${b.amount}</td>
+                  <td class="px-3 py-2 font-bold ${b.amount_paid > 0 ? 'text-emerald-700' : 'text-slate-400'}">${b.amount_paid > 0 ? '₹' + b.amount_paid : '—'}</td>
+                  <td class="px-3 py-2 font-mono text-slate-600">${b.utr_number || '—'}</td>
+                  <td class="px-3 py-2">${getStatusBadge(b.verification_status)}</td>
+                  <td class="px-3 py-2 text-right">
+                    <button onclick="sendWhatsAppMessage('${student.id}', '${b.id}')" class="text-emerald-600 hover:text-emerald-800"><i class="fa-brands fa-whatsapp"></i></button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      panel.classList.remove('hidden');
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    window.closeStudentDetailPanel = function () {
+      document.getElementById('studentDetailPanel')?.classList.add('hidden');
+      currentStudentDetailsId = null;
+    };
+
+    window.sendWhatsAppMessage = function (studentId, billId = null) {
+      const student = db.students.find(s => s.id === studentId);
+      if (!student) { showToast("Student not found", "error"); return; }
+
+      let mobile = (student.mobile_number || '').toString().replace(/\D/g, '');
+      if (!mobile) { showToast(`No mobile number on file for ${student.name}.`, "warning"); return; }
+      if (mobile.length === 10) mobile = '91' + mobile;
+
+      let bill = null;
+      if (billId) bill = db.mess_bills.find(b => b.id === billId);
+      else {
+        const bills = db.mess_bills.filter(b => b.student_id === studentId).sort((a, b) => (a.month > b.month ? 1 : -1));
+        bill = bills.length ? bills[bills.length - 1] : null;
+      }
+      if (!bill) { showToast("No mess bill record found for this student", "warning"); return; }
+
+      const signature = "\n\n_JNTUH UCE Mahabubabad — Mess Office (Staff Dashboard)_";
+      let message = "";
+      if (bill.verification_status === 'Verified') {
+        message = `Dear ${student.name},\n\n✅ Your mess fee payment for *${bill.month}* has been received and *VERIFIED* successfully.\n\nAmount Paid: ₹${bill.amount_paid || bill.amount}\nUTR Number: ${bill.utr_number || 'N/A'}\nHall Ticket No: ${student.hall_ticket_no}\n\nThank you for your timely payment.${signature}`;
+      } else {
+        message = `Dear ${student.name},\n\n⚠️ This is a reminder that your mess fee for *${bill.month}* amounting to ₹${bill.amount} is still *DUE / NOT PAID*.\n\nHall Ticket No: ${student.hall_ticket_no}\n\nKindly make the payment at the earliest and share the UTR/transaction number with the mess office.${signature}`;
+      }
+      window.open(`https://wa.me/${mobile}?text=${encodeURIComponent(message)}`, '_blank');
+      showToast(`Opening WhatsApp to message ${student.name}...`, "info");
+    };
+
+    // =======================================================================
+    // TAB 2: PAYMENT SESSIONS
+    // =======================================================================
+    window.loadSessionStudents = function () {
+      const month = document.getElementById('sessMonth').value;
+      const branch = document.getElementById('sessBranch').value;
+      const semester = document.getElementById('sessSemester').value;
+      const defaultAmount = parseFloat(document.getElementById('sessDefaultAmount').value) || '';
+
+      let students = db.students.filter(s => s.status === 'Active');
+      if (branch !== 'ALL') students = students.filter(s => s.branch === branch);
+      if (semester !== 'ALL') students = students.filter(s => s.semester === semester);
+
+      if (students.length === 0) { showToast("No matching active students found for these filters", "warning"); return; }
+
+      currentActiveSessionFilter = { month, branch, semester };
+      currentLoadedSessionStudents = students;
+
+      document.getElementById('sessionTableWrap').classList.remove('hidden');
+      document.getElementById('sessionMeta').textContent = `${students.length} student(s) loaded for ${month}${branch !== 'ALL' ? ' — ' + branch : ''}${semester !== 'ALL' ? ' — ' + semester : ''}`;
+
+      const tbody = document.getElementById('sessionStudentsTableBody');
+      tbody.innerHTML = '';
+      const today = new Date().toISOString().split('T')[0];
+
+      students.forEach(s => {
+        const existingBill = db.mess_bills.find(b => b.student_id === s.id && b.month === month);
+        const tr = document.createElement('tr');
+        tr.dataset.studentId = s.id;
+        tr.className = "hover:bg-slate-50";
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-mono font-bold text-blue-700">${s.hall_ticket_no}</td>
+          <td class="px-3 py-2 font-semibold text-slate-800">${s.name}</td>
+          <td class="px-3 py-2"><input type="text" class="sess-input-utr w-32 bg-slate-50 border border-slate-300 rounded-lg p-1.5 font-mono uppercase text-xs" value="${existingBill?.utr_number || ''}" placeholder="UTR..." /></td>
+          <td class="px-3 py-2"><input type="number" class="sess-input-amount w-24 bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs" value="${existingBill?.amount_paid || existingBill?.amount || defaultAmount}" placeholder="₹" /></td>
+          <td class="px-3 py-2"><input type="date" class="sess-input-date bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs" value="${existingBill?.payment_date || today}" /></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    };
+
+    window.submitSessionPayments = function () {
+      if (!currentActiveSessionFilter || currentLoadedSessionStudents.length === 0) { showToast("No active session loaded", "error"); return; }
+      const { month, branch, semester } = currentActiveSessionFilter;
+      const rows = document.querySelectorAll('#sessionStudentsTableBody tr');
+
+      let savedCount = 0, skippedCount = 0;
+      rows.forEach(tr => {
+        const studentId = tr.dataset.studentId;
+        const student = db.students.find(s => s.id === studentId);
+        const utr = (tr.querySelector('.sess-input-utr')?.value || '').trim().toUpperCase();
+        const amount = parseFloat(tr.querySelector('.sess-input-amount')?.value);
+        const date = tr.querySelector('.sess-input-date')?.value || new Date().toISOString().split('T')[0];
+
+        if (!student || !utr || isNaN(amount) || amount <= 0) { skippedCount++; return; }
+
+        let bill = db.mess_bills.find(b => b.student_id === studentId && b.month === month);
+        if (!bill) {
+          bill = {
+            id: "B_" + Math.floor(100000 + Math.random() * 900000),
+            student_id: studentId,
+            session_id: `SESS_${month.replace(' ', '_')}_${branch}`,
+            month: month,
+            academic_year: student.academic_year,
+            amount: amount,
+            due_date: `${month.split(' ')[1]}-09-10`,
+            payment_date: date,
+            utr_number: utr,
+            amount_paid: amount,
+            payment_status: "Paid",
+            verification_status: "Pending Verification",
+            verified_by: null,
+            verified_at: null
+          };
+          db.mess_bills.push(bill);
+        } else {
+          bill.payment_date = date;
+          bill.utr_number = utr;
+          bill.amount_paid = amount;
+          bill.payment_status = "Paid";
+          if (bill.verification_status === 'Not Found' || !bill.verification_status) bill.verification_status = "Pending Verification";
+        }
+        savedCount++;
+      });
+
+      db.payment_sessions.push({
+        id: "SESS_" + Date.now(),
+        month, branch, semester,
+        student_count: savedCount,
+        created_at: new Date().toISOString().split('T')[0],
+        created_by: currentUser?.email || 'Staff'
+      });
+
+      saveDatabase();
+      renderSessionHistory();
+      showToast(`Saved ${savedCount} payment record(s)${skippedCount > 0 ? `, ${skippedCount} row(s) skipped (missing UTR/amount)` : ''}`, "success");
+    };
+
+    window.renderSessionHistory = function () {
+      const list = document.getElementById('sessionHistoryList');
+      if (!list) return;
+      const sessions = (db.payment_sessions || []).slice().sort((a, b) => (a.created_at < b.created_at ? 1 : -1)).slice(0, 15);
+      if (sessions.length === 0) { list.innerHTML = `<p class="text-slate-400 text-xs">No payment sessions recorded yet.</p>`; return; }
+      list.innerHTML = sessions.map(s => `
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+          <div>
+            <strong class="text-slate-800">${s.month}</strong>
+            <span class="text-slate-500"> — ${s.branch === 'ALL' ? 'All Departments' : s.branch}${s.semester && s.semester !== 'ALL' ? ' — ' + s.semester : ''}</span>
+          </div>
+          <span class="text-[11px] font-semibold text-blue-700">${s.student_count} record(s)</span>
+        </div>
+      `).join('');
+    };
+
+    // =======================================================================
+    // TAB 3: STATEMENT UPLOAD
+    // =======================================================================
+    window.handleDragOver = function (e) { e.preventDefault(); document.getElementById('dropZone')?.classList.add('border-blue-500', 'bg-blue-50/50'); };
+    window.handleDragLeave = function (e) { e.preventDefault(); document.getElementById('dropZone')?.classList.remove('border-blue-500', 'bg-blue-50/50'); };
+    window.handleDropFile = function (e) {
+      e.preventDefault();
+      document.getElementById('dropZone')?.classList.remove('border-blue-500', 'bg-blue-50/50');
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) processUploadedFile(e.dataTransfer.files[0]);
+    };
+    window.handleFileSelected = function (e) {
+      if (e.target.files && e.target.files.length > 0) processUploadedFile(e.target.files[0]);
+    };
+
+    function processUploadedFile(file) {
+      const fileName = file.name;
+      const fileExt = fileName.split('.').pop().toLowerCase();
+      showToast(`Reading ${fileName}...`, 'info');
+      const reader = new FileReader();
+
+      if (fileExt === 'xlsx' || fileExt === 'xls') {
+        reader.onload = function (ev) {
+          try {
+            const data = new Uint8Array(ev.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+            parseStatementRows(jsonRows, fileName, 'Excel (.xlsx)');
+          } catch (err) { showToast("Failed to parse Excel workbook", "error"); }
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (fileExt === 'csv' || fileExt === 'txt') {
+        reader.onload = function (ev) {
+          try {
+            const text = ev.target.result;
+            const rows = text.split(/\r\n|\n/).map(row => row.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+            parseStatementRows(rows, fileName, 'CSV (.csv)');
+          } catch (err) { showToast("Failed to parse CSV file", "error"); }
+        };
+        reader.readAsText(file);
+      }
+    }
+
+    function parseStatementRows(rawRows, fileName, fileType) {
+      if (!rawRows || rawRows.length < 2) { showToast("Statement contains insufficient rows", "error"); return; }
+      const headers = rawRows[0].map(h => String(h || '').toLowerCase().trim());
+      let utrCol = headers.findIndex(h => h.includes('utr') || h.includes('txn') || h.includes('reference'));
+      let dateCol = headers.findIndex(h => h.includes('date') || h.includes('time'));
+      let amountCol = headers.findIndex(h => h.includes('amount') || h.includes('credit') || h.includes('paid'));
+      let descCol = headers.findIndex(h => h.includes('desc') || h.includes('narration') || h.includes('payer'));
+      if (utrCol === -1) utrCol = 1;
+      if (dateCol === -1) dateCol = 0;
+      if (amountCol === -1) amountCol = 2;
+      if (descCol === -1) descCol = 3;
+
+      const txns = [];
+      for (let i = 1; i < rawRows.length; i++) {
+        const row = rawRows[i];
+        if (!row || !row[utrCol]) continue;
+        const rawUtr = String(row[utrCol]).trim().toUpperCase();
+        if (!rawUtr || rawUtr === "UTR" || rawUtr === "TRANSACTION NUMBER") continue;
+        const dateVal = row[dateCol] ? String(row[dateCol]).trim() : new Date().toISOString().split('T')[0];
+        const amtVal = parseFloat(String(row[amountCol]).replace(/[^0-9.]/g, '')) || 0;
+        const descVal = row[descCol] ? String(row[descCol]).trim() : "Bank Credit";
+        txns.push({ id: "TXN_" + Date.now() + "_" + i, utr_number: rawUtr, transaction_date: dateVal, amount: amtVal, description: descVal });
+      }
+
+      if (txns.length === 0) { showToast("No valid UTR rows found in statement", "error"); return; }
+
+      pendingStatementTxns = txns;
+      pendingStatementFileMeta = { file_name: fileName, file_type: fileType };
+      renderStatementPreview();
+      showToast(`Parsed ${txns.length} transactions from ${fileName} — review and submit`, "info");
+    }
+
+    function renderStatementPreview() {
+      const area = document.getElementById('statementPreviewArea');
+      const tbody = document.getElementById('statementPreviewTbody');
+      const meta = document.getElementById('statementPreviewMeta');
+      if (!area || !tbody) return;
+      if (!pendingStatementTxns.length) { area.classList.add('hidden'); return; }
+      area.classList.remove('hidden');
+      tbody.innerHTML = '';
+
+      const existingUtrSet = new Set((db.statement_transactions || []).map(tx => tx.utr_number.toUpperCase()));
+      const seenInFile = {};
+      pendingStatementTxns.forEach(tx => { seenInFile[tx.utr_number] = (seenInFile[tx.utr_number] || 0) + 1; });
+      let newCount = 0, dupCount = 0;
+
+      pendingStatementTxns.forEach(tx => {
+        const isDup = existingUtrSet.has(tx.utr_number.toUpperCase()) || seenInFile[tx.utr_number] > 1;
+        if (isDup) dupCount++; else newCount++;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-3 py-2 text-slate-700 font-medium">${tx.transaction_date}</td>
+          <td class="px-3 py-2 font-mono font-bold text-slate-900">${tx.utr_number}</td>
+          <td class="px-3 py-2 font-bold text-emerald-700">₹${tx.amount.toLocaleString()}</td>
+          <td class="px-3 py-2 text-slate-600 text-[11px] truncate max-w-xs">${tx.description}</td>
+          <td class="px-3 py-2">${isDup ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Already in DB — skip</span>` : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">New — will save</span>`}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (meta) meta.textContent = `${pendingStatementTxns.length} transaction(s) parsed from ${pendingStatementFileMeta?.file_name || 'file'} — ${newCount} new, ${dupCount} already stored`;
+    }
+
+    window.submitStatementsToDatabase = function () {
+      if (!pendingStatementTxns.length) { showToast("Nothing to submit — upload a statement file first", "warning"); return; }
+      const existingUtrSet = new Set((db.statement_transactions || []).map(tx => tx.utr_number.toUpperCase()));
+      const seenInFile = new Set();
+      let added = 0, skipped = 0;
+
+      pendingStatementTxns.forEach(tx => {
+        const key = tx.utr_number.toUpperCase();
+        if (existingUtrSet.has(key) || seenInFile.has(key)) { skipped++; return; }
+        seenInFile.add(key);
+        db.statement_transactions.push({
+          id: "TXN_" + Date.now() + "_" + Math.floor(Math.random() * 100000),
+          statement_id: "STMT_" + Date.now(),
+          utr_number: tx.utr_number,
+          transaction_date: tx.transaction_date,
+          amount: tx.amount,
+          description: tx.description
+        });
+        added++;
+      });
+
+      db.payment_statements.push({
+        id: "STMT_" + Date.now(),
+        file_name: pendingStatementFileMeta?.file_name || 'Unknown file',
+        file_type: pendingStatementFileMeta?.file_type || 'Unknown',
+        uploaded_by: currentUser?.email || (db.settings.verifierName || "Staff"),
+        uploaded_at: `${new Date().toISOString().split('T')[0]} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+        processing_status: "Processed",
+        records_added: added,
+        records_skipped: skipped
+      });
+
+      saveDatabase();
+      pendingStatementTxns = [];
+      pendingStatementFileMeta = null;
+      document.getElementById('statementPreviewArea')?.classList.add('hidden');
+      document.getElementById('statementFileInput').value = '';
+      renderStatementTransactions();
+      showToast(`${added} transaction(s) saved${skipped > 0 ? `, ${skipped} skipped as already stored` : ''}`, "success");
+    };
+
+    window.discardStatementPreview = function () {
+      pendingStatementTxns = [];
+      pendingStatementFileMeta = null;
+      document.getElementById('statementPreviewArea')?.classList.add('hidden');
+      document.getElementById('statementFileInput').value = '';
+      showToast("Preview discarded — nothing was saved", "info");
+    };
+
+    window.renderStatementTransactions = function () {
+      const tbody = document.getElementById('statementTxnTableBody');
+      const meta = document.getElementById('statementActiveMeta');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      const statementCount = (db.payment_statements || []).length;
+      const txnCount = (db.statement_transactions || []).length;
+      if (meta) meta.textContent = txnCount > 0 ? `${txnCount} transaction(s) stored across ${statementCount} uploaded statement(s)` : 'No statement transactions stored yet';
+      if (!db.statement_transactions || db.statement_transactions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-6 text-center text-slate-400 text-xs">No bank statement transactions uploaded yet.</td></tr>`;
+        return;
+      }
+      db.statement_transactions.slice().reverse().forEach(tx => {
+        const studentMatch = db.mess_bills.find(b => b.utr_number && b.utr_number.trim().toUpperCase() === tx.utr_number.trim().toUpperCase());
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50";
+        tr.innerHTML = `
+          <td class="px-3 py-2 text-slate-700 font-medium">${tx.transaction_date}</td>
+          <td class="px-3 py-2 font-mono font-bold text-slate-900">${tx.utr_number}</td>
+          <td class="px-3 py-2 font-bold text-emerald-700">₹${tx.amount.toLocaleString()}</td>
+          <td class="px-3 py-2 text-slate-600 text-[11px] truncate max-w-xs">${tx.description}</td>
+          <td class="px-3 py-2">${studentMatch ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-link"></i> Linked (${studentMatch.month})</span>` : `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">Unclaimed</span>`}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    };
+
+    window.downloadSampleCSVTemplate = function () {
+      const csv = "Transaction Date,UTR Number,Amount,Narration / Payer Name\n2026-09-02,UTR90901,2500,UPI/22A91A0512/Aditi Verma\n2026-09-02,UTR90902,1500,UPI/22A91A0540/Pooja\n";
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "College_Bank_Statement_Template.csv";
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    };
+
+    // =======================================================================
+    // TAB 4: MONTHLY REPORT BY DEPARTMENT + WHATSAPP FORWARD
+    // =======================================================================
+    window.generateMonthlyDeptReport = function () {
+      const month = document.getElementById('repMonth')?.value;
+      const branchFilter = document.getElementById('repBranchFilter')?.value || 'ALL';
+      if (!month) return;
+
+      const departments = branchFilter === 'ALL' ? BRANCHES : [branchFilter];
+      const deptRows = [];
+      let grand = { students: 0, billed: 0, notBilled: 0, expected: 0, collected: 0, verified: 0 };
+
+      departments.forEach(dept => {
+        const students = db.students.filter(s => s.branch === dept && s.status === 'Active');
+        const studentIds = new Set(students.map(s => s.id));
+        const bills = db.mess_bills.filter(b => b.month === month && studentIds.has(b.student_id));
+
+        const expected = bills.reduce((acc, b) => acc + (b.amount || 0), 0);
+        const collected = bills.filter(b => b.payment_status === 'Paid' || b.amount_paid > 0).reduce((acc, b) => acc + (b.amount_paid || 0), 0);
+        const verified = bills.filter(b => b.verification_status === 'Verified').reduce((acc, b) => acc + (b.amount_paid || b.amount || 0), 0);
+        const billedIds = new Set(bills.map(b => b.student_id));
+        const notBilled = students.filter(s => !billedIds.has(s.id)).length;
+
+        deptRows.push({ dept, students: students.length, billed: bills.length, notBilled, expected, collected, verified, pending: expected - collected });
+
+        grand.students += students.length;
+        grand.billed += bills.length;
+        grand.notBilled += notBilled;
+        grand.expected += expected;
+        grand.collected += collected;
+        grand.verified += verified;
+      });
+
+      lastDeptReport = { month, branchFilter, deptRows, grand };
+
+      const meta = document.getElementById('repMeta');
+      if (meta) meta.textContent = `Department-wise mess fee report for ${month}${branchFilter !== 'ALL' ? ' — ' + branchFilter : ' — all departments'}`;
+
+      const tbody = document.getElementById('repDeptTableBody');
+      const tfoot = document.getElementById('repDeptTableFoot');
+      if (tbody) {
+        tbody.innerHTML = deptRows.map(r => {
+          const rate = r.expected > 0 ? Math.round((r.collected / r.expected) * 100) : 0;
+          return `
+            <tr class="hover:bg-slate-50">
+              <td class="px-3 py-2 font-semibold text-slate-800">${r.dept}</td>
+              <td class="px-3 py-2 text-right text-slate-600">${r.students}</td>
+              <td class="px-3 py-2 text-right text-slate-600">${r.billed}</td>
+              <td class="px-3 py-2 text-right text-slate-500">${r.notBilled}</td>
+              <td class="px-3 py-2 text-right font-semibold text-slate-800">₹${r.expected.toLocaleString()}</td>
+              <td class="px-3 py-2 text-right font-bold text-emerald-700">₹${r.collected.toLocaleString()}</td>
+              <td class="px-3 py-2 text-right font-bold text-blue-700">₹${r.verified.toLocaleString()}</td>
+              <td class="px-3 py-2 text-right font-semibold text-rose-700">₹${r.pending.toLocaleString()}</td>
+              <td class="px-3 py-2 text-right font-bold ${rate >= 80 ? 'text-emerald-700' : rate >= 40 ? 'text-amber-700' : 'text-rose-700'}">${rate}%</td>
+            </tr>
+          `;
+        }).join('');
+      }
+      if (tfoot) {
+        const grate = grand.expected > 0 ? Math.round((grand.collected / grand.expected) * 100) : 0;
+        tfoot.innerHTML = `
+          <tr>
+            <td class="px-3 py-2">TOTAL</td>
+            <td class="px-3 py-2 text-right">${grand.students}</td>
+            <td class="px-3 py-2 text-right">${grand.billed}</td>
+            <td class="px-3 py-2 text-right">${grand.notBilled}</td>
+            <td class="px-3 py-2 text-right">₹${grand.expected.toLocaleString()}</td>
+            <td class="px-3 py-2 text-right text-emerald-700">₹${grand.collected.toLocaleString()}</td>
+            <td class="px-3 py-2 text-right text-blue-700">₹${grand.verified.toLocaleString()}</td>
+            <td class="px-3 py-2 text-right text-rose-700">₹${(grand.expected - grand.collected).toLocaleString()}</td>
+            <td class="px-3 py-2 text-right">${grate}%</td>
+          </tr>
+        `;
+      }
+
+      renderPendingStudentsForMonth(month, branchFilter);
+    };
+
+    function renderPendingStudentsForMonth(month, branchFilter) {
+      const tbody = document.getElementById('repPendingTableBody');
+      const meta = document.getElementById('repPendingMeta');
+      if (!tbody) return;
+
+      let students = db.students.filter(s => s.status === 'Active');
+      if (branchFilter !== 'ALL') students = students.filter(s => s.branch === branchFilter);
+
+      const pending = students.filter(s => {
+        const bill = db.mess_bills.find(b => b.student_id === s.id && b.month === month);
+        return !bill || bill.verification_status !== 'Verified';
+      });
+
+      if (meta) meta.textContent = `${pending.length} student(s) with no verified payment for ${month}`;
+
+      if (pending.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-6 text-center text-slate-400 text-xs">All students in this selection are verified paid for ${month}.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = pending.map(s => {
+        const bill = db.mess_bills.find(b => b.student_id === s.id && b.month === month);
+        const status = bill ? bill.verification_status : 'Not Billed';
+        return `
+          <tr class="hover:bg-slate-50">
+            <td class="px-3 py-2 font-mono font-bold text-blue-700">${s.hall_ticket_no}</td>
+            <td class="px-3 py-2 font-semibold text-slate-800">${s.name}</td>
+            <td class="px-3 py-2 text-slate-600">${s.branch}</td>
+            <td class="px-3 py-2">${getStatusBadge(status)}</td>
+            <td class="px-3 py-2 text-right">
+              <button onclick="sendMonthlyReminder('${s.id}', '${month}')" class="text-emerald-600 hover:text-emerald-800"><i class="fa-brands fa-whatsapp"></i></button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    window.sendMonthlyReminder = function (studentId, month) {
+      const student = db.students.find(s => s.id === studentId);
+      if (!student) { showToast("Student not found", "error"); return; }
+      let mobile = (student.mobile_number || '').toString().replace(/\D/g, '');
+      if (!mobile) { showToast(`No mobile number on file for ${student.name}.`, "warning"); return; }
+      if (mobile.length === 10) mobile = '91' + mobile;
+
+      const bill = db.mess_bills.find(b => b.student_id === studentId && b.month === month);
+      const amount = bill ? bill.amount : '';
+      const signature = "\n\n_JNTUH UCE Mahabubabad — Mess Office (Staff Dashboard)_";
+      const message = `Dear ${student.name},\n\n⚠️ Reminder: your mess fee for *${month}*${amount ? ` amounting to ₹${amount}` : ''} is still *DUE / NOT VERIFIED*.\n\nHall Ticket No: ${student.hall_ticket_no}\n\nKindly pay at the earliest and share the UTR/transaction number with the mess office.${signature}`;
+      window.open(`https://wa.me/${mobile}?text=${encodeURIComponent(message)}`, '_blank');
+      showToast(`Opening WhatsApp to remind ${student.name}...`, "info");
+    };
+
+    function buildMonthlyReportWhatsAppText() {
+      if (!lastDeptReport) return '';
+      const { month, deptRows, grand } = lastDeptReport;
+      const grate = grand.expected > 0 ? Math.round((grand.collected / grand.expected) * 100) : 0;
+      let lines = [];
+      lines.push(`*JNTUH UCE Mahabubabad — Mess Fee Report*`);
+      lines.push(`*Month: ${month}*`);
+      lines.push('');
+      deptRows.forEach(r => {
+        const rate = r.expected > 0 ? Math.round((r.collected / r.expected) * 100) : 0;
+        lines.push(`*${r.dept}*`);
+        lines.push(`Students: ${r.students} | Billed: ${r.billed} | Not Billed: ${r.notBilled}`);
+        lines.push(`Expected: ₹${r.expected.toLocaleString()} | Collected: ₹${r.collected.toLocaleString()} | Verified: ₹${r.verified.toLocaleString()}`);
+        lines.push(`Pending: ₹${r.pending.toLocaleString()} | Collection: ${rate}%`);
+        lines.push('');
+      });
+      lines.push(`*Overall Total*`);
+      lines.push(`Students: ${grand.students} | Billed: ${grand.billed} | Not Billed: ${grand.notBilled}`);
+      lines.push(`Expected: ₹${grand.expected.toLocaleString()} | Collected: ₹${grand.collected.toLocaleString()} | Verified: ₹${grand.verified.toLocaleString()}`);
+      lines.push(`Overall Collection: ${grate}%`);
+      lines.push('');
+      lines.push(`_Sent from the Staff Dashboard on ${new Date().toLocaleDateString()}_`);
+      return lines.join('\n');
+    }
+
+    window.forwardMonthlyReportWhatsApp = function () {
+      if (!lastDeptReport) { showToast("Generate the report first by selecting a month", "warning"); return; }
+      let mobile = (document.getElementById('reportForwardPhone').value || '').replace(/\D/g, '');
+      if (!mobile) { showToast("Enter a recipient mobile number first", "warning"); return; }
+      if (mobile.length === 10) mobile = '91' + mobile;
+      const text = buildMonthlyReportWhatsAppText();
+      window.open(`https://wa.me/${mobile}?text=${encodeURIComponent(text)}`, '_blank');
+      showToast("Opening WhatsApp to forward this month's report...", "info");
+    };
+
+    window.exportMonthlyReport = function (format) {
+      if (!lastDeptReport) { showToast("Generate the report first by selecting a month", "warning"); return; }
+      const { month, deptRows, grand } = lastDeptReport;
+      const rows = deptRows.map(r => ({
+        "Department": r.dept,
+        "Month": month,
+        "Students": r.students,
+        "Billed": r.billed,
+        "Not Billed": r.notBilled,
+        "Expected (₹)": r.expected,
+        "Collected (₹)": r.collected,
+        "Verified (₹)": r.verified,
+        "Pending (₹)": r.pending,
+        "Collection %": r.expected > 0 ? Math.round((r.collected / r.expected) * 100) : 0
+      }));
+      rows.push({
+        "Department": "TOTAL", "Month": month, "Students": grand.students, "Billed": grand.billed,
+        "Not Billed": grand.notBilled, "Expected (₹)": grand.expected, "Collected (₹)": grand.collected,
+        "Verified (₹)": grand.verified, "Pending (₹)": grand.expected - grand.collected,
+        "Collection %": grand.expected > 0 ? Math.round((grand.collected / grand.expected) * 100) : 0
+      });
+
+      if (format === 'excel') {
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Monthly_Dept_Report");
+        XLSX.writeFile(wb, `Mess_Monthly_Report_${month.replace(' ', '_')}.xlsx`);
+        showToast("Report exported as Excel workbook", "success");
+      } else if (format === 'csv') {
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const csv = XLSX.utils.sheet_to_csv(ws);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `Mess_Monthly_Report_${month.replace(' ', '_')}.csv`;
+        document.body.appendChild(link); link.click();
+        showToast("Report exported as CSV file", "success");
+      }
+    };
+
+    // ---------------------------------------------------------------------
+    // Boot
+    // ---------------------------------------------------------------------
+    window.addEventListener('load', () => {
+      populateMonthDropdowns();
+      initFirebaseSync();
+    });
+  </script>
+</body>
+</html>
